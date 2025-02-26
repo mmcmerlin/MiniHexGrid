@@ -1,4 +1,3 @@
-
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -716,8 +715,8 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* hpcd)
       Error_Handler();
     }
 
-  /* Enable VDDUSB */
-  HAL_PWREx_EnableVddUSB();
+    /* Enable VDDUSB */
+    HAL_PWREx_EnableVddUSB();
     /* Peripheral clock enable */
     __HAL_RCC_USB_CLK_ENABLE();
   /* USER CODE BEGIN USB_DRD_FS_MspInit 1 */

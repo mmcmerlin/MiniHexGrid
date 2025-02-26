@@ -44,11 +44,39 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
+/* Definitions for UARTTask */
+osThreadId_t UARTTaskHandle;
+const osThreadAttr_t UARTTask_attributes = {
+  .name = "UARTTask",
+  .priority = (osPriority_t) osPriorityHigh,
+  .stack_size = 128 * 4
+};
+/* Definitions for NeoPixelTask */
+osThreadId_t NeoPixelTaskHandle;
+const osThreadAttr_t NeoPixelTask_attributes = {
+  .name = "NeoPixelTask",
   .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
+/* Definitions for EncoderTask */
+osThreadId_t EncoderTaskHandle;
+const osThreadAttr_t EncoderTask_attributes = {
+  .name = "EncoderTask",
+  .priority = (osPriority_t) osPriorityAboveNormal,
+  .stack_size = 128 * 4
+};
+/* Definitions for DisplayTask */
+osThreadId_t DisplayTaskHandle;
+const osThreadAttr_t DisplayTask_attributes = {
+  .name = "DisplayTask",
+  .priority = (osPriority_t) osPriorityAboveNormal1,
+  .stack_size = 128 * 4
+};
+/* Definitions for ServoTask */
+osThreadId_t ServoTaskHandle;
+const osThreadAttr_t ServoTask_attributes = {
+  .name = "ServoTask",
+  .priority = (osPriority_t) osPriorityLow,
   .stack_size = 128 * 4
 };
 
@@ -82,8 +110,20 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  /* creation of UARTTask */
+  UARTTaskHandle = osThreadNew(StartUARTTask, NULL, &UARTTask_attributes);
+
+  /* creation of NeoPixelTask */
+  NeoPixelTaskHandle = osThreadNew(StartNeoPixelTask, NULL, &NeoPixelTask_attributes);
+
+  /* creation of EncoderTask */
+  EncoderTaskHandle = osThreadNew(StartEncoderTask, NULL, &EncoderTask_attributes);
+
+  /* creation of DisplayTask */
+  DisplayTaskHandle = osThreadNew(StartDisplayTask, NULL, &DisplayTask_attributes);
+
+  /* creation of ServoTask */
+  ServoTaskHandle = osThreadNew(StartServoTask, NULL, &ServoTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -94,22 +134,94 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_EVENTS */
 
 }
-/* USER CODE BEGIN Header_StartDefaultTask */
+/* USER CODE BEGIN Header_StartUARTTask */
 /**
-* @brief Function implementing the defaultTask thread.
+* @brief Function implementing the UARTTask thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
+/* USER CODE END Header_StartUARTTask */
+void StartUARTTask(void *argument)
 {
-  /* USER CODE BEGIN defaultTask */
+  /* USER CODE BEGIN UARTTask */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END defaultTask */
+  /* USER CODE END UARTTask */
+}
+
+/* USER CODE BEGIN Header_StartNeoPixelTask */
+/**
+* @brief Function implementing the NeoPixelTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartNeoPixelTask */
+void StartNeoPixelTask(void *argument)
+{
+  /* USER CODE BEGIN NeoPixelTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END NeoPixelTask */
+}
+
+/* USER CODE BEGIN Header_StartEncoderTask */
+/**
+* @brief Function implementing the EncoderTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartEncoderTask */
+void StartEncoderTask(void *argument)
+{
+  /* USER CODE BEGIN EncoderTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END EncoderTask */
+}
+
+/* USER CODE BEGIN Header_StartDisplayTask */
+/**
+* @brief Function implementing the DisplayTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartDisplayTask */
+void StartDisplayTask(void *argument)
+{
+  /* USER CODE BEGIN DisplayTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END DisplayTask */
+}
+
+/* USER CODE BEGIN Header_StartServoTask */
+/**
+* @brief Function implementing the ServoTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartServoTask */
+void StartServoTask(void *argument)
+{
+  /* USER CODE BEGIN ServoTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END ServoTask */
 }
 
 /* Private application code --------------------------------------------------*/

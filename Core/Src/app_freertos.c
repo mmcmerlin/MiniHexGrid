@@ -22,7 +22,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "neopixel_driver.h"
+#include "ssd1306.h"
+#include "ssd1306_fonts.h"
+#include <stdio.h>
+#include "main.c"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -201,7 +205,12 @@ void StartDisplayTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	ssd1306_Fill(White);
+    ssd1306_UpdateScreen();
+    osDelay(1000);
+	ssd1306_Fill(Black);
+    ssd1306_UpdateScreen();
+    osDelay(1000);
   }
   /* USER CODE END DisplayTask */
 }
@@ -219,7 +228,12 @@ void StartServoTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 250);   // Move to 0°
+	osDelay(1000);
+	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 750);// Move to 90°
+	osDelay(1000);
+	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 1250); // Move to 180°
+	osDelay(1000);
   }
   /* USER CODE END ServoTask */
 }

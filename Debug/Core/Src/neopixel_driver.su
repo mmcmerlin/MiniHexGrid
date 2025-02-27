@@ -1,0 +1,4 @@
+../Core/Src/neopixel_driver.c:15:19:NEOPIXEL_Init	16	static
+../Core/Src/neopixel_driver.c:27:6:NEOPIXEL_SetColour	16	static
+../Core/Src/neopixel_driver.c:33:19:NEOPIXEL_Update	16	static
+../Core/Src/neopixel_driver.c:60:6:NEOPIXEL_Callback	8	static

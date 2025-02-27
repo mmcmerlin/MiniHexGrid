@@ -22,7 +22,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "neopixel_driver.h"
 #include "ssd1306.h"
 #include "ssd1306_fonts.h"
 #include <stdio.h>

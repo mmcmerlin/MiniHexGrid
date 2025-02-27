@@ -46,11 +46,11 @@ Core/Src/app_freertos.o: ../Core/Src/app_freertos.c \
  ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_hal_exti.h \
  ../Middlewares/Third_Party/CMSIS/RTOS2/Include/cmsis_os2.h \
  ../Core/Inc/neopixel_driver.h \
- C:/Users/DELL/OneDrive/Desktop/Workspace\ STM32/mini-hexgrid-v2/Drivers/OLED/ssd1306.h \
- C:/Users/DELL/OneDrive/Desktop/Workspace\ STM32/mini-hexgrid-v2/Drivers/OLED/ssd1306_conf.h \
- C:/Users/DELL/OneDrive/Desktop/Workspace\ STM32/mini-hexgrid-v2/Drivers/OLED/ssd1306_fonts.h \
- C:/Users/DELL/OneDrive/Desktop/Workspace\ STM32/mini-hexgrid-v2/Drivers/OLED/ssd1306.h \
- ../Core/Src/main.c ../Core/Inc/main.h
+ C:/Users/vikra/STM32CubeIDE/workspace_1.16.1/mini-hexgrid-v2/Drivers/OLED/ssd1306.h \
+ C:/Users/vikra/STM32CubeIDE/workspace_1.16.1/mini-hexgrid-v2/Drivers/OLED/ssd1306_conf.h \
+ C:/Users/vikra/STM32CubeIDE/workspace_1.16.1/mini-hexgrid-v2/Drivers/OLED/ssd1306_fonts.h \
+ C:/Users/vikra/STM32CubeIDE/workspace_1.16.1/mini-hexgrid-v2/Drivers/OLED/ssd1306.h \
+ ../Core/Inc/main.h
 ../Core/Inc/app_freertos.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 ../Core/Inc/FreeRTOSConfig.h:
@@ -99,9 +99,8 @@ Core/Src/app_freertos.o: ../Core/Src/app_freertos.c \
 ../Drivers/STM32H5xx_HAL_Driver/Inc/stm32h5xx_hal_exti.h:
 ../Middlewares/Third_Party/CMSIS/RTOS2/Include/cmsis_os2.h:
 ../Core/Inc/neopixel_driver.h:
-C:/Users/DELL/OneDrive/Desktop/Workspace\ STM32/mini-hexgrid-v2/Drivers/OLED/ssd1306.h:
-C:/Users/DELL/OneDrive/Desktop/Workspace\ STM32/mini-hexgrid-v2/Drivers/OLED/ssd1306_conf.h:
-C:/Users/DELL/OneDrive/Desktop/Workspace\ STM32/mini-hexgrid-v2/Drivers/OLED/ssd1306_fonts.h:
-C:/Users/DELL/OneDrive/Desktop/Workspace\ STM32/mini-hexgrid-v2/Drivers/OLED/ssd1306.h:
-../Core/Src/main.c:
+C:/Users/vikra/STM32CubeIDE/workspace_1.16.1/mini-hexgrid-v2/Drivers/OLED/ssd1306.h:
+C:/Users/vikra/STM32CubeIDE/workspace_1.16.1/mini-hexgrid-v2/Drivers/OLED/ssd1306_conf.h:
+C:/Users/vikra/STM32CubeIDE/workspace_1.16.1/mini-hexgrid-v2/Drivers/OLED/ssd1306_fonts.h:
+C:/Users/vikra/STM32CubeIDE/workspace_1.16.1/mini-hexgrid-v2/Drivers/OLED/ssd1306.h:
 ../Core/Inc/main.h:

@@ -26,7 +26,7 @@
 #include "ssd1306.h"
 #include "ssd1306_fonts.h"
 #include <stdio.h>
-#include "main.c"
+#include "main.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,7 +46,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-
+extern TIM_HandleTypeDef htim4;
 /* USER CODE END Variables */
 /* Definitions for UARTTask */
 osThreadId_t UARTTaskHandle;
@@ -166,10 +166,12 @@ void StartUARTTask(void *argument)
 void StartNeoPixelTask(void *argument)
 {
   /* USER CODE BEGIN NeoPixelTask */
+  uint8_t counter = 0;
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	counter++;
+    osDelay(30);
   }
   /* USER CODE END NeoPixelTask */
 }

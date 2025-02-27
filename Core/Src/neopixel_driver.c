@@ -4,16 +4,16 @@
  *  Created on: Feb 26, 2025
  *      Author: Ikhwan Abd Rahman & Vikram Barr
  */
-#include "main.h"
-#include "stm32h5xx_it.h"
+#include "neopixel_driver.h"
 
+extern TIM_HandleTypeDef htim2;
 NEOPIXEL_LEDDATARGB	NEOPIXEL_LED_DATA[NEOPIXEL_NUM_LEDS];
 uint8_t NEOPIXEL_DMA_BUF[NEOPIXEL_DMA_BUF_LEN];
 
 volatile uint8_t NEOPIXEL_DMA_COMPLETE_FLAG;
 
 HAL_StatusTypeDef NEOPIXEL_Init() {
-	HAL_StatusTypeDef halStatus = HAL_TIM_PWN_Init(&NEOPIXEL_TIM);
+	HAL_StatusTypeDef halStatus = HAL_TIM_PWM_Init(&NEOPIXEL_TIM);
 
 	for (uint16_t bufIndex = 0; bufIndex < NEOPIXEL_DMA_BUF_LEN; bufIndex++) {
 		NEOPIXEL_DMA_BUF[bufIndex] = 0;
@@ -38,8 +38,8 @@ HAL_StatusTypeDef NEOPIXEL_Update() {
 	uint16_t bufIndex = 0;
 
 	for (uint8_t ledIndex = 0; ledIndex < NEOPIXEL_NUM_LEDS; ledIndex++) {
-		for (uint8_t bitIndex = 0; bitIndex < NEOPIXEL_BITS_PER_LED; bitIndex++) {
-			if (NEOPIXEL_LED_DATA[ledIndex].data >> bitIndex & 0x01) {
+		for (uint8_t bitIndex = 1; bitIndex <= NEOPIXEL_BITS_PER_LED; bitIndex++) {
+			if (NEOPIXEL_LED_DATA[ledIndex].data >> (NEOPIXEL_BITS_PER_LED - bitIndex) & 0x01) {
 				NEOPIXEL_DMA_BUF[bufIndex] = NEOPIXEL_HI_VAL;
 			} else {
 				NEOPIXEL_DMA_BUF[bufIndex] = NEOPIXEL_LO_VAL;

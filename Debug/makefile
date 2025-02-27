@@ -65,8 +65,8 @@ all: main-build
 main-build: mini-hexgrid-v2.elf secondary-outputs
 
 # Tool invocations
-mini-hexgrid-v2.elf mini-hexgrid-v2.map: $(OBJS) $(USER_OBJS) C:\Users\DELL\OneDrive\Desktop\Workspace\ STM32\mini-hexgrid-v2\STM32H562RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "mini-hexgrid-v2.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\DELL\OneDrive\Desktop\Workspace STM32\mini-hexgrid-v2\STM32H562RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="mini-hexgrid-v2.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+mini-hexgrid-v2.elf mini-hexgrid-v2.map: $(OBJS) $(USER_OBJS) C:\Users\vikra\STM32CubeIDE\workspace_1.16.1\mini-hexgrid-v2\STM32H562RGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "mini-hexgrid-v2.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m33 -T"C:\Users\vikra\STM32CubeIDE\workspace_1.16.1\mini-hexgrid-v2\STM32H562RGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="mini-hexgrid-v2.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -1,4 +1,0 @@
-../Core/Src/neopixel_driver.c:15:19:NEOPIXEL_Init	2
-../Core/Src/neopixel_driver.c:27:6:NEOPIXEL_SetColour	1
-../Core/Src/neopixel_driver.c:33:19:NEOPIXEL_Update	6
-../Core/Src/neopixel_driver.c:60:6:NEOPIXEL_Callback	1

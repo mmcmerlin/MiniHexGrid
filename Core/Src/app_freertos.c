@@ -166,12 +166,22 @@ void StartUARTTask(void *argument)
 void StartNeoPixelTask(void *argument)
 {
   /* USER CODE BEGIN NeoPixelTask */
-  uint8_t counter = 0;
+  NEOPIXEL_Init();
   /* Infinite loop */
   for(;;)
   {
-	counter++;
-    osDelay(30);
+	NEOPIXEL_SetColour(0, 255, 255, 255);
+	NEOPIXEL_SetColour(1, 0, 0, 0);
+	NEOPIXEL_SetColour(2, 255, 255, 255);
+	NEOPIXEL_SetColour(3, 0, 0, 0);
+	NEOPIXEL_Update();
+	osDelay(1000);
+	NEOPIXEL_SetColour(0, 0, 0, 0);
+	NEOPIXEL_SetColour(1, 255, 255, 255);
+	NEOPIXEL_SetColour(2, 0, 0, 0);
+	NEOPIXEL_SetColour(3, 255, 255, 255);
+	NEOPIXEL_Update();
+	osDelay(1000);
   }
   /* USER CODE END NeoPixelTask */
 }

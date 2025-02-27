@@ -1,6 +1,0 @@
-../Core/Src/app_freertos.c:97:6:MX_FREERTOS_Init	1
-../Core/Src/app_freertos.c:148:6:StartUARTTask	1
-../Core/Src/app_freertos.c:166:6:StartNeoPixelTask	1
-../Core/Src/app_freertos.c:186:6:StartEncoderTask	1
-../Core/Src/app_freertos.c:204:6:StartDisplayTask	1
-../Core/Src/app_freertos.c:227:6:StartServoTask	1

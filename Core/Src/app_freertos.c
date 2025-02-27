@@ -47,6 +47,10 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 extern TIM_HandleTypeDef htim4;
+extern TIM_HandleTypeDef htim3;
+int16_t encoderPosition = 0;
+int16_t lastEncoderPosition = 0;
+uint8_t Index = 0;
 /* USER CODE END Variables */
 /* Definitions for UARTTask */
 osThreadId_t UARTTaskHandle;
@@ -96,7 +100,9 @@ const osThreadAttr_t ServoTask_attributes = {
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
+	ssd1306_Init();
+	HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -199,7 +205,15 @@ void StartEncoderTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+		encoderPosition = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
+
+		if (encoderPosition != lastEncoderPosition) {
+		  if (encoderPosition > lastEncoderPosition) {
+			  Index++;
+		  }
+		  lastEncoderPosition = encoderPosition;
+		}
+	    osDelay(10);
   }
   /* USER CODE END EncoderTask */
 }

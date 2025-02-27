@@ -59,8 +59,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define SWITCH_Pin GPIO_PIN_7
-#define SWITCH_GPIO_Port GPIOA
 #define NEOPIXEL_Pin GPIO_PIN_15
 #define NEOPIXEL_GPIO_Port GPIOA
 

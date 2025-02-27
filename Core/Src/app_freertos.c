@@ -254,11 +254,11 @@ void StartServoTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 250);   // Move to 0°
+	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 1000);   // Move to -90° ~1ms pulse
 	osDelay(1000);
-	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 750);// Move to 90°
+	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 2000);// Move to 0° ~2ms pulse
 	osDelay(1000);
-	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 1250); // Move to 180°
+	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 1500); // Move to 90° ~1.5ms pulse
 	osDelay(1000);
   }
   /* USER CODE END ServoTask */

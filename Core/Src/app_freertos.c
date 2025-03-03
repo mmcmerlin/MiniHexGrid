@@ -22,11 +22,14 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "neopixel_driver.h"
+#include "main.h"
+#include "stdio.h"
+
 #include "ssd1306.h"
 #include "ssd1306_fonts.h"
-#include <stdio.h>
-#include "main.h"
+
+#include "neopixel_driver.h"
+#include "comms_protocol.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,19 +49,17 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart3;
+
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim3;
+
 int16_t encoderPosition = 0;
 int16_t lastEncoderPosition = 0;
 uint8_t Index = 0;
 /* USER CODE END Variables */
-/* Definitions for UARTTask */
-osThreadId_t UARTTaskHandle;
-const osThreadAttr_t UARTTask_attributes = {
-  .name = "UARTTask",
-  .priority = (osPriority_t) osPriorityHigh,
-  .stack_size = 128 * 4
-};
 /* Definitions for NeoPixelTask */
 osThreadId_t NeoPixelTaskHandle;
 const osThreadAttr_t NeoPixelTask_attributes = {
@@ -91,6 +92,17 @@ const osThreadAttr_t ServoTask_attributes = {
 osMutexId_t displayMutexHandle;
 const osMutexAttr_t displayMutex_attributes = {
   .name = "displayMutex"
+/* Definitions for UARTTask */
+osThreadId_t UARTTaskHandle;
+const osThreadAttr_t UARTTask_attributes = {
+  .name = "UARTTask",
+  .priority = (osPriority_t) osPriorityHigh,
+  .stack_size = 128 * 4
+};
+/* Definitions for UARTMailQueue */
+osMessageQueueId_t UARTMailQueueHandle;
+const osMessageQueueAttr_t UARTMailQueue_attributes = {
+  .name = "UARTMailQueue"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -123,13 +135,12 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
+  /* creation of UARTMailQueue */
+  UARTMailQueueHandle = osMessageQueueNew (16, sizeof(COMMS_Update), &UARTMailQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
-  /* creation of UARTTask */
-  UARTTaskHandle = osThreadNew(StartUARTTask, NULL, &UARTTask_attributes);
-
   /* creation of NeoPixelTask */
   NeoPixelTaskHandle = osThreadNew(StartNeoPixelTask, NULL, &NeoPixelTask_attributes);
 
@@ -142,6 +153,9 @@ void MX_FREERTOS_Init(void) {
   /* creation of ServoTask */
   ServoTaskHandle = osThreadNew(StartServoTask, NULL, &ServoTask_attributes);
 
+  /* creation of UARTTask */
+  UARTTaskHandle = osThreadNew(StartUARTTask, NULL, &UARTTask_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -151,25 +165,11 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_EVENTS */
 
 }
-/* USER CODE BEGIN Header_StartUARTTask */
-/**
-* @brief Function implementing the UARTTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartUARTTask */
-void StartUARTTask(void *argument)
-{
-  /* USER CODE BEGIN UARTTask */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END UARTTask */
+/* USER CODE BEGIN Header_StartNeoPixelTask */
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
+	NEOPIXEL_Callback();
 }
 
-/* USER CODE BEGIN Header_StartNeoPixelTask */
 /**
 * @brief Function implementing the NeoPixelTask thread.
 * @param argument: Not used
@@ -183,18 +183,21 @@ void StartNeoPixelTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	NEOPIXEL_SetColour(0, 255, 255, 255);
-	NEOPIXEL_SetColour(1, 0, 0, 0);
-	NEOPIXEL_SetColour(2, 255, 255, 255);
-	NEOPIXEL_SetColour(3, 0, 0, 0);
+	NEOPIXEL_SetColour(1, 255, 0, 0);
+	NEOPIXEL_SetColour(2, 0, 255, 0);
+	NEOPIXEL_SetColour(3, 0, 0, 255);
 	NEOPIXEL_Update();
-	osDelay(1000);
-	NEOPIXEL_SetColour(0, 0, 0, 0);
-	NEOPIXEL_SetColour(1, 255, 255, 255);
-	NEOPIXEL_SetColour(2, 0, 0, 0);
-	NEOPIXEL_SetColour(3, 255, 255, 255);
+	osDelay(500);
+	NEOPIXEL_SetColour(1, 0, 255, 0);
+	NEOPIXEL_SetColour(2, 0, 0, 255);
+	NEOPIXEL_SetColour(3, 255, 0, 0);
 	NEOPIXEL_Update();
-	osDelay(1000);
+	osDelay(500);
+	NEOPIXEL_SetColour(1, 0, 0, 255);
+	NEOPIXEL_SetColour(2, 255, 0, 0);
+	NEOPIXEL_SetColour(3, 0, 255, 0);
+	NEOPIXEL_Update();
+	osDelay(500);
   }
   /* USER CODE END NeoPixelTask */
 }
@@ -261,14 +264,51 @@ void StartServoTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 1000);   // Move to -90° ~1ms pulse
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, 500);   // Move to -90° ~1ms pulse
 	osDelay(1000);
-	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 1500);// Move to 0° ~1.5ms pulse
-	osDelay(1000);
-	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 2000); // Move to 90° ~2ms pulse
+	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 2500); // Move to 90° ~2ms pulse
 	osDelay(1000);
   }
   /* USER CODE END ServoTask */
+}
+
+/* USER CODE BEGIN Header_StartUARTTask */
+COMMS_Message *tx_buf_1;
+COMMS_Message *rx_buf_1;
+
+COMMS_Message *tx_buf_2;
+COMMS_Message *rx_buf_2;
+
+COMMS_Message *tx_buf_3;
+COMMS_Message *rx_buf_3;
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
+  if (Size == COMMS_MSG_LEN) {
+	COMMS_Message *message = (COMMS_Message *) huart->pRxBuffPtr;
+	COMMS_Update update = {.huart = huart, .message = *message};
+	osMessageQueuePut(UARTMailQueueHandle, &update, 0, 0);
+  }
+
+  HAL_UARTEx_ReceiveToIdle_DMA(huart, huart->pRxBuffPtr, COMMS_MSG_LEN);
+}
+/**
+* @brief Function implementing the UARTTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartUARTTask */
+void StartUARTTask(void *argument)
+{
+  /* USER CODE BEGIN UARTTask */
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, (uint8_t *) rx_buf_1, COMMS_MSG_LEN);
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart2, (uint8_t *) rx_buf_2, COMMS_MSG_LEN);
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart3, (uint8_t *) rx_buf_3, COMMS_MSG_LEN);
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END UARTTask */
 }
 
 /* Private application code --------------------------------------------------*/

@@ -87,6 +87,11 @@ const osThreadAttr_t ServoTask_attributes = {
   .priority = (osPriority_t) osPriorityLow,
   .stack_size = 128 * 4
 };
+/* Definitions for displayMutex */
+osMutexId_t displayMutexHandle;
+const osMutexAttr_t displayMutex_attributes = {
+  .name = "displayMutex"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -104,6 +109,8 @@ void MX_FREERTOS_Init(void) {
 	HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
   /* USER CODE END Init */
+  /* creation of displayMutex */
+  displayMutexHandle = osMutexNew(&displayMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -256,9 +263,9 @@ void StartServoTask(void *argument)
   {
 	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 1000);   // Move to -90° ~1ms pulse
 	osDelay(1000);
-	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 2000);// Move to 0° ~2ms pulse
+	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 1500);// Move to 0° ~1.5ms pulse
 	osDelay(1000);
-	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 1500); // Move to 90° ~1.5ms pulse
+	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 2000); // Move to 90° ~2ms pulse
 	osDelay(1000);
   }
   /* USER CODE END ServoTask */

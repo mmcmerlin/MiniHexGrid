@@ -396,6 +396,7 @@ VP_TIM4_VS_ClockSourceINT.Mode=Internal
 VP_TIM4_VS_ClockSourceINT.Signal=TIM4_VS_ClockSourceINT
 board=custom
 rtos.0.ip=STMicroelectronics.X-CUBE-FREERTOS.1.2.0
+rtos.0.mutexes.0=allocationType,Dynamic;controlBlockName,NULL;name,displayMutex
 rtos.0.tasks.0=allocationType,Dynamic;bufferName,NULL;codeGen,Default;controlBlockName,NULL;entry,StartUARTTask;name,UARTTask;parameter,NULL;priority,osPriorityHigh;stackSize,128
 rtos.0.tasks.1=allocationType,Dynamic;bufferName,NULL;codeGen,Default;controlBlockName,NULL;entry,StartNeoPixelTask;name,NeoPixelTask;parameter,NULL;priority,osPriorityNormal;stackSize,128
 rtos.0.tasks.2=allocationType,Dynamic;bufferName,NULL;codeGen,Default;controlBlockName,NULL;entry,StartEncoderTask;name,EncoderTask;parameter,NULL;priority,osPriorityAboveNormal;stackSize,128

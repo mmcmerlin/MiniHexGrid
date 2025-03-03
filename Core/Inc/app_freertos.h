@@ -59,6 +59,7 @@ extern osThreadId_t NeoPixelTaskHandle;
 extern osThreadId_t EncoderTaskHandle;
 extern osThreadId_t DisplayTaskHandle;
 extern osThreadId_t ServoTaskHandle;
+extern osMutexId_t displayMutexHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */

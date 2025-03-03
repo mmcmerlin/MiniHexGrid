@@ -88,16 +88,17 @@ const osThreadAttr_t ServoTask_attributes = {
   .priority = (osPriority_t) osPriorityLow,
   .stack_size = 128 * 4
 };
-/* Definitions for displayMutex */
-osMutexId_t displayMutexHandle;
-const osMutexAttr_t displayMutex_attributes = {
-  .name = "displayMutex"
 /* Definitions for UARTTask */
 osThreadId_t UARTTaskHandle;
 const osThreadAttr_t UARTTask_attributes = {
   .name = "UARTTask",
   .priority = (osPriority_t) osPriorityHigh,
   .stack_size = 128 * 4
+};
+/* Definitions for displayMutex */
+osMutexId_t displayMutexHandle;
+const osMutexAttr_t displayMutex_attributes = {
+  .name = "displayMutex"
 };
 /* Definitions for UARTMailQueue */
 osMessageQueueId_t UARTMailQueueHandle;

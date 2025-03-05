@@ -9,7 +9,6 @@
 
 void updateMenuDisplay(void)
 {
-	if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
 		ssd1306_Fill(Black);
 		// Display top message based on the current menu
 		if (currentMenu == &startupMenu) {
@@ -50,8 +49,6 @@ void updateMenuDisplay(void)
 			ssd1306_WriteString(currentMenu->items[itemIndex], Font_7x10, White);
 			}
 		ssd1306_UpdateScreen();
-		osMutexRelease(displayMutexHandle);
-		}
 }
 
 void setupParentMenus(void) {
@@ -72,3 +69,45 @@ void setupParentMenus(void) {
     startupMenu.parentMenu = NULL; // Entry point
 }
 
+/*Navigation and selection functions*/
+void displaySelection() {
+    if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) { // Acquire the mutex
+        ssd1306_WriteString("Selected:", Font_11x18, White);
+        ssd1306_SetCursor(10, 25);
+        ssd1306_WriteString(currentMenu->items[currentIndex], Font_11x18, White);
+        ssd1306_UpdateScreen();
+        osDelay(500);                // Delay to show feedback
+        osMutexRelease(displayMutexHandle); // Release the mutex
+    }
+}
+
+void navigateToSubmenu(Menu *submenu) {
+    displaySelectionFeedback(); 	// Show feedback for the selection
+    currentMenu = submenu;    		// Navigate to the given submenu
+    currentIndex = 0;         		// Reset index for the new menu
+    startIndex = 0;           		// Reset the display window
+
+}
+
+void navigateBack() {
+    if (currentMenu->parentMenu) {
+        currentMenu = currentMenu->parentMenu; // Navigate back to the parent menu
+        currentIndex = 0;                      // Reset index for the parent menu
+        startIndex = 0;                        // Reset the display window
+    }
+}
+
+void handleSelection() {
+	  ssd1306_Fill(Black);
+	  ssd1306_SetCursor(10, 0);
+
+	  if (currentMenu->subMenus && currentMenu->subMenus[currentIndex]) {
+		  navigateToSubmenu(currentMenu->subMenus[currentIndex]);
+	  } else if (strcmp(currentMenu->items[currentIndex], "Back") == 0) {
+		  navigateBack();
+	  } else if (strcmp(currentMenu->items[currentIndex], "Exit") == 0) {
+		  navigateBack();        // Navigate back to Option Menu
+	  } else if (strcmp(currentMenu->items[currentIndex], "Return") == 0) {
+		  navigateBack();        // Navigate back to Option Menu
+	  }
+}

@@ -79,5 +79,9 @@ uint8_t currentIndex = 0;
 /* Declare functions */
 void updateMenuDisplay(void);
 void setupParentMenus(void);
+void displaySelection(void);
+void navigateToSubmenu(Menu *submenu);
+void navigateBack(void);
+void handleSelection();
 
 #endif /* INC_NEOPIXEL_DRIVER_H_ */

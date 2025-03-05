@@ -56,9 +56,6 @@ extern UART_HandleTypeDef huart3;
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim3;
 
-int16_t encoderPosition = 0;
-int16_t lastEncoderPosition = 0;
-uint8_t Index = 0;
 /* USER CODE END Variables */
 /* Definitions for NeoPixelTask */
 osThreadId_t NeoPixelTaskHandle;
@@ -210,6 +207,11 @@ void StartNeoPixelTask(void *argument)
 * @retval None
 */
 /* USER CODE END Header_StartEncoderTask */
+// Encoder variables
+int16_t encoderPosition = 0;
+int16_t lastEncoderPosition = 0;
+uint8_t buttonPressed = 0;
+
 void StartEncoderTask(void *argument)
 {
   /* USER CODE BEGIN EncoderTask */
@@ -220,7 +222,15 @@ void StartEncoderTask(void *argument)
 
 		if (encoderPosition != lastEncoderPosition) {
 		  if (encoderPosition > lastEncoderPosition) {
-			  Index++;
+			currentIndex = (currentIndex + 1) % currentMenu->itemCount;
+			if (currentIndex >= startIndex + WINDOW_SIZE) {
+			  startIndex++;
+			}
+		  } else {
+			currentIndex = (currentIndex == 0) ? currentMenu->itemCount - 1 : currentIndex - 1;
+			if (currentIndex < startIndex) {
+			  startIndex--;
+			}
 		  }
 		  lastEncoderPosition = encoderPosition;
 		}
@@ -242,12 +252,10 @@ void StartDisplayTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	ssd1306_Fill(White);
-    ssd1306_UpdateScreen();
-    osDelay(1000);
-	ssd1306_Fill(Black);
-    ssd1306_UpdateScreen();
-    osDelay(1000);
+	if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
+		updateMenuDisplay();
+		osMutexRelease(displayMutexHandle);
+	}
   }
   /* USER CODE END DisplayTask */
 }

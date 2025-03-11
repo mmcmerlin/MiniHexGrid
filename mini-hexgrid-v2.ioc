@@ -404,4 +404,5 @@ rtos.0.tasks.1=allocationType,Dynamic;bufferName,NULL;codeGen,Default;controlBlo
 rtos.0.tasks.2=allocationType,Dynamic;bufferName,NULL;codeGen,Default;controlBlockName,NULL;entry,StartDisplayTask;name,DisplayTask;parameter,NULL;priority,osPriorityAboveNormal1;stackSize,128
 rtos.0.tasks.3=allocationType,Dynamic;bufferName,NULL;codeGen,Default;controlBlockName,NULL;entry,StartServoTask;name,ServoTask;parameter,NULL;priority,osPriorityLow;stackSize,128
 rtos.0.tasks.4=allocationType,Dynamic;bufferName,NULL;codeGen,Default;controlBlockName,NULL;entry,StartUARTTask;name,UARTTask;parameter,NULL;priority,osPriorityHigh;stackSize,128
+rtos.0.tasks.5=allocationType,Dynamic;bufferName,NULL;codeGen,Default;controlBlockName,NULL;entry,StartButtonTask;name,ButtonTask;parameter,NULL;priority,osPriorityAboveNormal2;stackSize,128
 isbadioc=false

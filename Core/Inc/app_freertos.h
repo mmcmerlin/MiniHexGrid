@@ -59,6 +59,7 @@ extern osThreadId_t EncoderTaskHandle;
 extern osThreadId_t DisplayTaskHandle;
 extern osThreadId_t ServoTaskHandle;
 extern osThreadId_t UARTTaskHandle;
+extern osThreadId_t ButtonTaskHandle;
 extern osMutexId_t displayMutexHandle;
 extern osMessageQueueId_t UARTMailQueueHandle;
 
@@ -72,6 +73,7 @@ void StartEncoderTask(void *argument);
 void StartDisplayTask(void *argument);
 void StartServoTask(void *argument);
 void StartUARTTask(void *argument);
+void StartButtonTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 

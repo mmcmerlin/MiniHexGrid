@@ -23,10 +23,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "main.h"
-#include "stdio.h"
 
-#include "ssd1306.h"
-#include "ssd1306_fonts.h"
+#include "display_driver.h"
 
 #include "neopixel_driver.h"
 #include "comms_protocol.h"
@@ -55,6 +53,15 @@ extern UART_HandleTypeDef huart3;
 
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim3;
+
+extern uint8_t currentIndex;
+extern Menu *currentMenu;
+extern uint8_t startIndex;
+
+// Encoder variables
+int16_t encoderPosition = 0;
+int16_t lastEncoderPosition = 0;
+uint8_t buttonPressed = 0;
 
 /* USER CODE END Variables */
 /* Definitions for NeoPixelTask */
@@ -92,6 +99,13 @@ const osThreadAttr_t UARTTask_attributes = {
   .priority = (osPriority_t) osPriorityHigh,
   .stack_size = 128 * 4
 };
+/* Definitions for ButtonTask */
+osThreadId_t ButtonTaskHandle;
+const osThreadAttr_t ButtonTask_attributes = {
+  .name = "ButtonTask",
+  .priority = (osPriority_t) osPriorityAboveNormal2,
+  .stack_size = 128 * 4
+};
 /* Definitions for displayMutex */
 osMutexId_t displayMutexHandle;
 const osMutexAttr_t displayMutex_attributes = {
@@ -115,9 +129,7 @@ const osMessageQueueAttr_t UARTMailQueue_attributes = {
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-	ssd1306_Init();
-	HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1);
-	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
+
   /* USER CODE END Init */
   /* creation of displayMutex */
   displayMutexHandle = osMutexNew(&displayMutex_attributes);
@@ -153,6 +165,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of UARTTask */
   UARTTaskHandle = osThreadNew(StartUARTTask, NULL, &UARTTask_attributes);
+
+  /* creation of ButtonTask */
+  ButtonTaskHandle = osThreadNew(StartButtonTask, NULL, &ButtonTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -207,14 +222,10 @@ void StartNeoPixelTask(void *argument)
 * @retval None
 */
 /* USER CODE END Header_StartEncoderTask */
-// Encoder variables
-int16_t encoderPosition = 0;
-int16_t lastEncoderPosition = 0;
-uint8_t buttonPressed = 0;
-
 void StartEncoderTask(void *argument)
 {
   /* USER CODE BEGIN EncoderTask */
+  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1);
   /* Infinite loop */
   for(;;)
   {
@@ -249,6 +260,7 @@ void StartEncoderTask(void *argument)
 void StartDisplayTask(void *argument)
 {
   /* USER CODE BEGIN DisplayTask */
+  ssd1306_Init();
   /* Infinite loop */
   for(;;)
   {
@@ -270,9 +282,11 @@ void StartDisplayTask(void *argument)
 void StartServoTask(void *argument)
 {
   /* USER CODE BEGIN ServoTask */
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
   /* Infinite loop */
   for(;;)
   {
+	 /*Create routines*/
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, 500);   // Move to -90° ~1ms pulse
 	osDelay(1000);
 	__HAL_TIM_SET_COMPARE(&htim4,TIM_CHANNEL_4, 2500); // Move to 90° ~2ms pulse
@@ -318,6 +332,33 @@ void StartUARTTask(void *argument)
     osDelay(1);
   }
   /* USER CODE END UARTTask */
+}
+
+/* USER CODE BEGIN Header_StartButtonTask */
+/**
+* @brief Function implementing the ButtonTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartButtonTask */
+void StartButtonTask(void *argument)
+{
+  /* USER CODE BEGIN ButtonTask */
+  /* Infinite loop */
+  for(;;)
+  {
+	if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET && !buttonPressed)
+	{ //currentMenu->items[currentIndex], "Back"
+	  buttonPressed = 1;
+	  handleSelection();
+	}
+	else if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET)
+	{
+	  buttonPressed = 0;
+	}
+    osDelay(50);
+  }
+  /* USER CODE END ButtonTask */
 }
 
 /* Private application code --------------------------------------------------*/

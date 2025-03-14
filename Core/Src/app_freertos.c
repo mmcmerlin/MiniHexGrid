@@ -25,6 +25,7 @@
 #include "main.h"
 
 #include "display_driver.h"
+#include "servo_routine.h"
 
 #include "neopixel_driver.h"
 #include "comms_protocol.h"
@@ -282,7 +283,8 @@ void StartDisplayTask(void *argument)
 void StartServoTask(void *argument)
 {
   /* USER CODE BEGIN ServoTask */
-  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
+  Servo_Init(&htim4, TIM_CHANNEL_4);
+  //HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
   /* Infinite loop */
   for(;;)
   {
@@ -348,9 +350,13 @@ void StartButtonTask(void *argument)
   for(;;)
   {
 	if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET && !buttonPressed)
-	{ //currentMenu->items[currentIndex], "Back"
+	{
 	  buttonPressed = 1;
-	  handleSelection();
+	  if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
+		handleSelection();
+		osMutexRelease(displayMutexHandle);
+	  }
+
 	}
 	else if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET)
 	{

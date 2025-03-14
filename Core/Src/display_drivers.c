@@ -8,6 +8,19 @@
 #include "display_driver.h"
 #include <string.h>
 
+//Adjusting encoder value
+int *valueToAdjust = NULL;  // Initialize as NULL
+char labelToShow[20];
+int minVal, maxVal;
+//default values
+int tapChange = 100;
+int load = 100;
+int resist = 100;
+int react = 50;
+int active = 100;
+int reactive = 20;
+
+
 /* Display Variables */
 /* Scrolling Parameters */
 uint8_t startIndex = 0; // First item visible in the current window
@@ -18,13 +31,13 @@ uint8_t startIndex = 0; // First item visible in the current window
 const char *CDCmenuItems[] = {"CDC info", "Ext peripherals"};
 //const char *optionMenuItems[] = {"Transformer", "City", "Transmission", "Generator", "Return"};
 //new stuff
-const char *tformerMenuItems[] = {"Module info", "Exit"};
+const char *tformerMenuItems[] = {"Module info"};
 const char *tformerSubmenuItems[] = {"Tap changer", "Back"};
-const char *cityMenuItems[] = {"Module info", "Exit"};
+const char *cityMenuItems[] = {"Module info"};
 const char *citySubmenuItems[] = {"Load value", "Back"};
-const char *tmissionMenuItems[] = {"Module info", "Exit"};
+const char *tmissionMenuItems[] = {"Module info"};
 const char *tmissionSubmenuItems[] = {"Resistance", "Reactance", "Back"};
-const char *genMenuItems[] = {"Module info", "Exit"};
+const char *genMenuItems[] = {"Module info"};
 const char *genSubmenuItems[] = {"Active","Reactive", "Back"};
 //old
 const char *CDCsubmenu1Items[] = {"Mode 1", "Mode 2", "Back"}; //ask what game modes to add
@@ -33,17 +46,17 @@ const char *CDCsubmenu2Items[] = {"Option 1", "Option 2", "Back"};
 /* Submenus */
 //new stuff
 Menu tformerModule = {tformerSubmenuItems, 2, NULL, NULL};
-Menu *tformerSubmenu[] = {&tformerModule, NULL};
-Menu tformerMenu = {tformerMenuItems, 2, tformerSubmenu, NULL};
+Menu *tformerSubmenu[] = {&tformerModule};
+Menu tformerMenu = {tformerMenuItems, 1, tformerSubmenu, NULL};
 Menu cityModule = {citySubmenuItems, 2, NULL, NULL};
-Menu *citySubmenu[] = {&cityModule, NULL};
-Menu cityMenu = {cityMenuItems, 2, citySubmenu, NULL};
+Menu *citySubmenu[] = {&cityModule};
+Menu cityMenu = {cityMenuItems, 1, citySubmenu, NULL};
 Menu tmissionModule = {tmissionSubmenuItems, 3, NULL, NULL};
-Menu *tmissionSubmenu[] = {&tmissionModule, NULL};
-Menu tmissionMenu = {tmissionMenuItems, 2, tmissionSubmenu, NULL};
+Menu *tmissionSubmenu[] = {&tmissionModule};
+Menu tmissionMenu = {tmissionMenuItems, 1, tmissionSubmenu, NULL};
 Menu genModule = {genSubmenuItems, 3, NULL, NULL};
-Menu *genSubmenu[] = {&genModule, NULL};
-Menu genMenu = {genMenuItems, 2, genSubmenu, NULL};
+Menu *genSubmenu[] = {&genModule};
+Menu genMenu = {genMenuItems, 1, genSubmenu, NULL};
 //Menu *optionSubmenu[] = {&tformerMenu, &cityMenu, &tmissionMenu, &genMenu, NULL};
 //old
 Menu CDCsubmenu1 = {CDCsubmenu1Items, 3, NULL, NULL};
@@ -62,14 +75,6 @@ uint8_t currentIndex = 0;
 void updateMenuDisplay(void)
 {
 	ssd1306_Fill(Black);
-	// Display top message based on the current menu
-//		if (currentMenu == &startupMenu) {
-//			ssd1306_SetCursor(10, 0);
-//			ssd1306_WriteString("Are you the CDC?", Font_7x10, White);
-//		} else if (currentMenu == &optionMenu) {
-//			ssd1306_SetCursor(10, 0);
-//			ssd1306_WriteString("Select a module", Font_7x10, White);
-//		}
 	if (currentMenu == &tformerMenu) {
 		ssd1306_SetCursor(10, 0);
 		ssd1306_WriteString("Transformer menu", Font_7x10, White);
@@ -124,14 +129,13 @@ void setupParentMenus(void) {
 
 /*Navigation and selection functions*/
 void displaySelection() {
-    //if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) { // Acquire the mutex
+    ssd1306_Fill(Black);
+    ssd1306_SetCursor(10, 0);
 	ssd1306_WriteString("Selected:", Font_11x18, White);
 	ssd1306_SetCursor(10, 25);
 	ssd1306_WriteString(currentMenu->items[currentIndex], Font_11x18, White);
 	ssd1306_UpdateScreen();
-    //osDelay(500);                // Delay to show feedback
-    //osMutexRelease(displayMutexHandle); // Release the mutex
-    //}
+    osDelay(500);                // Delay to show feedback
 }
 
 void navigateToSubmenu(Menu *submenu) {
@@ -151,17 +155,21 @@ void navigateBack() {
 }
 
 void handleSelection() {
-	  ssd1306_Fill(Black);
-	  ssd1306_SetCursor(10, 0);
-
 	  if (currentMenu->subMenus && currentMenu->subMenus[currentIndex]) {
 		  navigateToSubmenu(currentMenu->subMenus[currentIndex]);
 	  } else if (strcmp(currentMenu->items[currentIndex], "Back") == 0) {
 		  navigateBack();
 	  }
-//	  else if (strcmp(currentMenu->items[currentIndex], "Exit") == 0) {
-//		  navigateBack();        // Navigate back to Option Menu
-//	  } else if (strcmp(currentMenu->items[currentIndex], "Return") == 0) {
-//		  navigateBack();        // Navigate back to Option Menu
-//	  }
+}
+
+void liveUpdate(){
+    ssd1306_Fill(Black);
+    ssd1306_SetCursor(10, 10);
+    ssd1306_WriteString(labelToShow, Font_11x18, White);
+    ssd1306_SetCursor(10, 30);
+
+    char buffer[10];
+    sprintf(buffer, "%d", *valueToAdjust);
+    ssd1306_WriteString(buffer, Font_11x18, White);
+    ssd1306_UpdateScreen();  // Update the OLED screen immediately
 }

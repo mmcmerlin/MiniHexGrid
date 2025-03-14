@@ -32,6 +32,7 @@ void setupParentMenus(void);
 void displaySelection(void);
 void navigateToSubmenu(Menu *submenu);
 void navigateBack(void);
-void handleSelection();
+void handleSelection(void);
+void liveUpdate(void);
 
 #endif /* INC_DISPLAY_DRIVER_H_ */

@@ -60,8 +60,12 @@ extern osThreadId_t DisplayTaskHandle;
 extern osThreadId_t ServoTaskHandle;
 extern osThreadId_t UARTTaskHandle;
 extern osThreadId_t ButtonTaskHandle;
+extern osThreadId_t GameTaskHandle;
 extern osMutexId_t displayMutexHandle;
 extern osMessageQueueId_t UARTMailQueueHandle;
+extern osMessageQueueId_t UARTTx1QueueHandle;
+extern osMessageQueueId_t UARTTx2QueueHandle;
+extern osMessageQueueId_t UARTTx3QueueHandle;
 
 /* Exported function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -74,6 +78,7 @@ void StartDisplayTask(void *argument);
 void StartServoTask(void *argument);
 void StartUARTTask(void *argument);
 void StartButtonTask(void *argument);
+void StartGameTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 

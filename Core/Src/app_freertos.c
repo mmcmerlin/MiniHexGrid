@@ -28,7 +28,7 @@
 #include "servo_routine.h"
 
 #include "neopixel_driver.h"
-#include "comms_protocol.h"
+#include "sim_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,6 +58,11 @@ extern TIM_HandleTypeDef htim3;
 extern uint8_t currentIndex;
 extern Menu *currentMenu;
 extern uint8_t startIndex;
+
+uint8_t display;
+uint8_t servo;
+uint8_t uart;
+uint8_t neopixel;
 
 // Encoder variables
 int16_t encoderPosition = 0;
@@ -107,6 +112,13 @@ const osThreadAttr_t ButtonTask_attributes = {
   .priority = (osPriority_t) osPriorityAboveNormal2,
   .stack_size = 128 * 4
 };
+/* Definitions for GameTask */
+osThreadId_t GameTaskHandle;
+const osThreadAttr_t GameTask_attributes = {
+  .name = "GameTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
 /* Definitions for displayMutex */
 osMutexId_t displayMutexHandle;
 const osMutexAttr_t displayMutex_attributes = {
@@ -116,6 +128,21 @@ const osMutexAttr_t displayMutex_attributes = {
 osMessageQueueId_t UARTMailQueueHandle;
 const osMessageQueueAttr_t UARTMailQueue_attributes = {
   .name = "UARTMailQueue"
+};
+/* Definitions for UARTTx1Queue */
+osMessageQueueId_t UARTTx1QueueHandle;
+const osMessageQueueAttr_t UARTTx1Queue_attributes = {
+  .name = "UARTTx1Queue"
+};
+/* Definitions for UARTTx2Queue */
+osMessageQueueId_t UARTTx2QueueHandle;
+const osMessageQueueAttr_t UARTTx2Queue_attributes = {
+  .name = "UARTTx2Queue"
+};
+/* Definitions for UARTTx3Queue */
+osMessageQueueId_t UARTTx3QueueHandle;
+const osMessageQueueAttr_t UARTTx3Queue_attributes = {
+  .name = "UARTTx3Queue"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -147,7 +174,13 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of UARTMailQueue */
-  UARTMailQueueHandle = osMessageQueueNew (16, sizeof(COMMS_Update), &UARTMailQueue_attributes);
+  UARTMailQueueHandle = osMessageQueueNew (16, sizeof(SIM_EVENT), &UARTMailQueue_attributes);
+  /* creation of UARTTx1Queue */
+  UARTTx1QueueHandle = osMessageQueueNew (16, sizeof(SIM_EVENT), &UARTTx1Queue_attributes);
+  /* creation of UARTTx2Queue */
+  UARTTx2QueueHandle = osMessageQueueNew (16, sizeof(SIM_EVENT), &UARTTx2Queue_attributes);
+  /* creation of UARTTx3Queue */
+  UARTTx3QueueHandle = osMessageQueueNew (16, sizeof(SIM_EVENT), &UARTTx3Queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -169,6 +202,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of ButtonTask */
   ButtonTaskHandle = osThreadNew(StartButtonTask, NULL, &ButtonTask_attributes);
+
+  /* creation of GameTask */
+  GameTaskHandle = osThreadNew(StartGameTask, NULL, &GameTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -269,6 +305,7 @@ void StartDisplayTask(void *argument)
 		updateMenuDisplay();
 		osMutexRelease(displayMutexHandle);
 	}
+	osDelay(40);
   }
   /* USER CODE END DisplayTask */
 }
@@ -298,24 +335,58 @@ void StartServoTask(void *argument)
 }
 
 /* USER CODE BEGIN Header_StartUARTTask */
-COMMS_Message *tx_buf_1;
-COMMS_Message *rx_buf_1;
+SIM_LOCAL_DATA self;
+SIM_PORT SIM_PORTS[3] = {
+		{.huart = &huart1, .tx_queue = &UARTTx1QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
+		{.huart = &huart2, .tx_queue = &UARTTx2QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
+		{.huart = &huart3, .tx_queue = &UARTTx3QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
+};
 
-COMMS_Message *tx_buf_2;
-COMMS_Message *rx_buf_2;
+uint8_t SIM_UART_FindPort(UART_HandleTypeDef *huart) {
+	for (uint8_t port = 0; port < 3; port++) {
+		if (SIM_PORTS[port].huart == huart) return port;
+	}
+	return 0;
+}
 
-COMMS_Message *tx_buf_3;
-COMMS_Message *rx_buf_3;
+void SIM_UART_Transmit(uint8_t port, SIM_MESSAGE message) {
+	// save the message to the port tx buffer
+	uint8_t buf_ctr = SIM_PORTS[port].tx_ctr++;
+	SIM_PORTS[port].tx_buf[buf_ctr] = message;
+
+	// attempt to transmit message, and if it fails, add it to the queue
+	if (HAL_UART_Transmit_DMA(SIM_PORTS[port].huart, (uint8_t *) &SIM_PORTS[port].tx_buf[buf_ctr], SIM_MSG_LEN) == HAL_BUSY) {
+		SIM_EVENT event = {.huart = SIM_PORTS[port].huart, .message = &SIM_PORTS[port].tx_buf[buf_ctr]};
+		osMessageQueuePut(*SIM_PORTS[port].tx_queue, &event, 0, 0);
+	}
+}
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
-  if (Size == COMMS_MSG_LEN) {
-	COMMS_Message *message = (COMMS_Message *) huart->pRxBuffPtr;
-	COMMS_Update update = {.huart = huart, .message = *message};
-	osMessageQueuePut(UARTMailQueueHandle, &update, 0, 0);
-  }
+  if (Size == SIM_MSG_LEN) {
+  	// add the message to the mail queue
+		SIM_EVENT event = { .huart = huart, .message = (SIM_MESSAGE *) huart->pRxBuffPtr };
+		osMessageQueuePut(UARTMailQueueHandle, &event, 0, 0);
 
-  HAL_UARTEx_ReceiveToIdle_DMA(huart, huart->pRxBuffPtr, COMMS_MSG_LEN);
+		// start listening again on an incremented location in the port's rx buffer
+		uint8_t port = SIM_UART_FindPort(huart);
+		HAL_UARTEx_ReceiveToIdle_DMA(huart, (uint8_t *) &SIM_PORTS[port].rx_buf[SIM_PORTS[port].rx_ctr++], SIM_MSG_LEN);
+  } else {
+  	// if the message is incomplete, it can be overwritten in the port's rx buffer
+  	HAL_UARTEx_ReceiveToIdle_DMA(huart, huart->pRxBuffPtr, SIM_MSG_LEN);
+  }
 }
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+	SIM_EVENT next;
+	uint8_t prio;
+	uint8_t port = SIM_UART_FindPort(huart);
+
+	// check if there are messages in the queue and start transmission on the next if so
+	if (osMessageQueueGet(*SIM_PORTS[port].tx_queue, &next, &prio, 0) == osOK) {
+		HAL_UART_Transmit_DMA(huart, (uint8_t *) next.message, SIM_MSG_LEN);
+	}
+}
+
 /**
 * @brief Function implementing the UARTTask thread.
 * @param argument: Not used
@@ -325,14 +396,93 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 void StartUARTTask(void *argument)
 {
   /* USER CODE BEGIN UARTTask */
-  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, (uint8_t *) rx_buf_1, COMMS_MSG_LEN);
-  HAL_UARTEx_ReceiveToIdle_DMA(&huart2, (uint8_t *) rx_buf_2, COMMS_MSG_LEN);
-  HAL_UARTEx_ReceiveToIdle_DMA(&huart3, (uint8_t *) rx_buf_3, COMMS_MSG_LEN);
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+	self.module = SIM_CCGT;
+	self.mapped = 0;
+
+	// begin recursive DMA receives for every port
+	for (uint8_t port = 0; port < 3; port++) {
+		HAL_UARTEx_ReceiveToIdle_DMA(SIM_PORTS[port].huart, (uint8_t*) SIM_PORTS[port].rx_buf, SIM_MSG_LEN);
+	}
+
+	/* Infinite loop */
+	for (;;) {
+		SIM_EVENT event;
+		uint8_t priority;
+		// wait until a message can be retrieved from the queue
+		osMessageQueueGet(UARTMailQueueHandle, &event, &priority, osWaitForever);
+
+		// process the message
+		SIM_MESSAGE copy = *event.message;
+
+		if (self.module == SIM_MASTER) {
+			if (copy.meta.type == SIM_RESPONSE) {
+
+			}
+		} else {
+			switch (copy.meta.type) {
+			case SIM_CLEAR:
+				if (self.mapped) {
+					SIM_UART_Transmit(self.left, copy);
+					SIM_UART_Transmit(self.right, copy);
+					self.mapped = 0;
+				}
+				break;
+			case SIM_REQUEST:
+				// assign our ports if we haven't already
+				if (!self.mapped) {
+					self.path = copy.meta.path;
+					self.location = copy.meta.location;
+
+					int8_t port = SIM_UART_FindPort(event.huart);
+					self.upstream = port;
+					self.left = (port + 1) % 3;
+					self.right = (port + 2) % 3;
+					self.mapped = 1;
+				}
+
+				self.game = copy.data.request;
+
+				// TODO check compatibility with last module
+				// relay the message on both ports after editing the address and sender
+				copy.meta.last = self.module;
+				copy.meta.location++;
+				SIM_UART_Transmit(self.left, copy);
+				copy.meta.path |= 0x01 << (copy.meta.location - 1);
+				SIM_UART_Transmit(self.right, copy);
+
+				// send your local data upstream to the master
+				SIM_MESSAGE response;
+				response.meta.type = SIM_RESPONSE;
+				response.meta.path = self.path;
+				response.meta.location = self.location;
+				response.meta.origin = self.module;
+				response.meta.last = self.module;
+
+				response.data.response = self.local;
+
+				SIM_UART_Transmit(self.upstream, response);
+				break;
+			case SIM_RESPONSE:
+				// immediately relay the message to the master
+				SIM_UART_Transmit(self.upstream, copy);
+				break;
+			case SIM_UPDATE:
+				// check if we are the recipient
+				if (copy.meta.location) {
+					copy.meta.location--;
+					uint8_t direction = copy.meta.path & 0x01;
+					copy.meta.path >>= 1;
+
+					// relay the copy on the correct port
+					SIM_UART_Transmit((self.right * direction) + (self.left * !direction), copy);
+				} else {
+					// copy the data for ourselves
+					self.received = copy.data.update;
+				}
+				break;
+			}
+		}
+	}
   /* USER CODE END UARTTask */
 }
 
@@ -365,6 +515,45 @@ void StartButtonTask(void *argument)
     osDelay(50);
   }
   /* USER CODE END ButtonTask */
+}
+
+/* USER CODE BEGIN Header_StartGameTask */
+/**
+* @brief Function implementing the GameTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartGameTask */
+void StartGameTask(void *argument)
+{
+  /* USER CODE BEGIN GameTask */
+  /* Infinite loop */
+	/* USER CODE BEGIN GameTask */
+	if (self.module == SIM_MASTER) {
+		// clear all board addresses on init
+		SIM_MESSAGE clear;
+		clear.meta.type = SIM_CLEAR;
+		SIM_UART_Transmit(0, clear);
+
+		self.game.time = 0;
+		self.game.frequency = 0;
+		self.game.mode = SIM_FREQUENCY_GAME;
+		SIM_MESSAGE request;
+		request.meta.type = SIM_REQUEST;
+		request.meta.path = 0;
+		request.meta.location = 0;
+		for(;;) {
+			self.game.time++;
+			request.data.request = self.game;
+			SIM_UART_Transmit(0, request);
+			osDelay(500);
+		}
+	} else {
+		for(;;) {
+			osDelay(1);
+		}
+	}
+  /* USER CODE END GameTask */
 }
 
 /* Private application code --------------------------------------------------*/

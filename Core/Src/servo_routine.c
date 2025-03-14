@@ -48,8 +48,8 @@ void Servo_SetAngle(uint8_t angle) {
  */
 void Servo_UpdateAngle(uint16_t host_freq) {
     // Constrain sensor value to the range 45 - 55
-    if (host_freq < FREQ_MIN_VALUE) sensor_value = FREQ_MIN_VALUE;
-    if (host_freq > FREQ_MAX_VALUE) sensor_value = FREQ_MAX_VALUE;
+    if (host_freq < FREQ_MIN_VALUE) host_freq = FREQ_MIN_VALUE;
+    if (host_freq > FREQ_MAX_VALUE) host_freq = FREQ_MAX_VALUE;
 
     // Map sensor value (45 - 55) to servo angle (60 - 120)
     uint8_t angle = SERVO_MIN_ANGLE + ((host_freq - FREQ_MIN_VALUE) * (SERVO_MAX_ANGLE - SERVO_MIN_ANGLE)) /

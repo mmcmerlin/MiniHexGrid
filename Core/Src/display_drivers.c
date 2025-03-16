@@ -69,7 +69,7 @@ Menu CDCmenu = {CDCmenuItems,2, CDCsubMenus, NULL};
 
 
 /* Current Menu Pointer */
-Menu *currentMenu = &CDCmenu;
+Menu *currentMenu = &genMenu;
 uint8_t currentIndex = 0;
 
 void updateMenuDisplay(void)

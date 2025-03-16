@@ -47,15 +47,42 @@ void Servo_SetAngle(uint8_t angle) {
  * @param  host_freq: Frequency of the grid (assumed range: 45 - 55).
  */
 void Servo_UpdateAngle(uint16_t host_freq) {
-    // Constrain sensor value to the range 45 - 55
+    // Constrain frequency value to the range 45 - 55
     if (host_freq < FREQ_MIN_VALUE) host_freq = FREQ_MIN_VALUE;
     if (host_freq > FREQ_MAX_VALUE) host_freq = FREQ_MAX_VALUE;
 
-    // Map sensor value (45 - 55) to servo angle (60 - 120)
+    // Map frequency (45 - 55) to servo angle (60 - 120)
     uint8_t angle = SERVO_MIN_ANGLE + ((host_freq - FREQ_MIN_VALUE) * (SERVO_MAX_ANGLE - SERVO_MIN_ANGLE)) /
                     (FREQ_MAX_VALUE - FREQ_MIN_VALUE);
 
     Servo_SetAngle(angle);
 }
 
+/**
+ * @brief  Sets the FS90R continuous servo speed.
+ * @param  speed: Speed from -100 (full CCW) to 100 (full CW).
+ */
+void Servo_SetSpeed(int8_t speed) {
+    if (speed < -100) speed = -100;
+    if (speed > 100) speed = 100;
 
+    uint32_t pulse_width;
+
+    if (speed == 0) {
+        pulse_width = FS90R_STOP_PULSE;  // Stop the servo
+    } else if (speed > 0) {
+        pulse_width = FS90R_STOP_PULSE + ((FS90R_MAX_CW_PULSE - FS90R_STOP_PULSE) * speed) / 100;
+    } else {
+        pulse_width = FS90R_STOP_PULSE + ((FS90R_MAX_CCW_PULSE - FS90R_STOP_PULSE) * speed) / 100;
+    }
+
+    uint32_t compare_value = (pulse_width * __HAL_TIM_GET_AUTORELOAD(htimX)) / PWM_PERIOD;
+    __HAL_TIM_SET_COMPARE(htimX, PWM_CHANNEL, compare_value);
+}
+
+/**
+ * @brief  Stops the FS90R continuous servo.
+ */
+void Servo_Stop(void) {
+    Servo_SetSpeed(0);  // Neutral position (Stop)
+}

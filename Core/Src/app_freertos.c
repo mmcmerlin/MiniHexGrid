@@ -335,7 +335,7 @@ void StartServoTask(void *argument)
 }
 
 /* USER CODE BEGIN Header_StartUARTTask */
-SIM_LOCAL_DATA self;
+SIM_DATA self;
 SIM_PORT SIM_PORTS[3] = {
 		{.huart = &huart1, .tx_queue = &UARTTx1QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
 		{.huart = &huart2, .tx_queue = &UARTTx2QueueHandle, .rx_ctr = 0, .tx_ctr = 0},

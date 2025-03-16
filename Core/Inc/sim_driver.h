@@ -49,57 +49,108 @@
  * Message Protocol
  */
 typedef struct {
-	uint8_t type;
-	uint8_t location;
-	uint16_t path;
-	uint8_t origin;
-	uint8_t last;
+	uint8_t type; 					// message type
+	uint8_t location;				// part of the address, the number of modules away from the master
+	uint16_t path;					// part of the address, series of 0's (right) and 1's (left)
+	uint8_t origin;					// type of module that originated the message
+	uint8_t last;						// type of last module to send this message (a neighbor)
 } SIM_METADATA;
 
 typedef struct {
-	uint8_t mode;
-	int8_t time;
-	int8_t frequency;
+	uint8_t mode;						// game mode
+	uint16_t time;					// game time | time / 240 = day
+	int8_t frequency;				// (frequency / 255) + 1 = current frequency / rated frequency
 } SIM_REQUEST_DATA;
 
 typedef union {
 	struct {
-		int16_t real;
-		int16_t reactive;
+		int16_t real;					// real / 100 = MW real power
+		int16_t reactive;			// reactive / 100 = MVAr reactive power
 	} bus;
 
 	struct {
-		uint16_t length;
+		uint8_t type;					// 0 - 10km high quality, 1 - 50km low quality
 	} line;
 
 	struct {
-		int16_t tap;
+		int8_t tap;						// (tap / 255) + 1 = tap ratio
 	} transformer;
-
-	struct {
-		int16_t capacity;
-	} storage;
 } SIM_RESPONSE_DATA;
 
 typedef union {
 	struct {
-		int8_t voltage;
-		int16_t reactive;
+		int8_t voltage;				// (voltage / 255) + 1 = pu voltage
+		int16_t reactive;			// reactive / 100 = MVAr reactive power
 	} bus;
 
 	struct {
-		int16_t mva;
+		int16_t mva;					// mva / 100 = MVA line flow
 	} line;
 
 	struct {
-		int16_t mva;
+		int16_t mva;					// mva / 100 = MVA transformer flow
 	} transformer;
+} SIM_UPDATE_DATA;
+
+typedef union {
+	struct {
+		int16_t setpoint;			// setpoint / 100 = MW real power
+		uint8_t delta;
+	} ccgt;
 
 	struct {
-		int16_t real;
-		int16_t reactive;
-	} storage;
-} SIM_UPDATE_DATA;
+		int16_t setpoint;			// setpoint / 100 = MW real power
+		uint8_t delta;
+	} nuclear;
+
+	struct {
+		uint8_t	rating;				// rating / 10 = maximum turbine MW
+		uint8_t turbines;			// turbines * rating = maximum farm MW
+		uint8_t windspeed;		// windspeed / 10 = ms^-1
+		uint8_t rated;				// rated / 10 = speed at which rating MW is produced
+		uint8_t cutout;				// cutout / 10 = cut out speed
+		uint8_t cutin;				// cutin / 10 = cut in speed
+	} wind;
+
+	struct {
+		uint8_t intensity;		// watts per m^2
+		uint16_t area;				// area in m^2
+	} solar;
+
+	struct {
+		uint16_t population;	// population * 1000 = actual population | actual population / 1000 = MW consumption
+	} city;
+
+	struct {
+		uint8_t spaces;				// number of charging spaces | spaces * 2 = MW consumption
+	} carpark;
+
+	struct {
+		int16_t setpoint;			// setpoint / 100 = MW real power
+		uint8_t delta;
+	} factory;
+
+	struct {
+		int16_t volume;				// volume / 10 = max MWh stored
+		int16_t stored;				// stored / 10 = MWh stored
+		int16_t setpoint;			// setpoint / 100 = MW real power
+		uint8_t delta;
+	} phydro;
+
+	struct {
+		int16_t capacity;			// capacity / 10 = MWh per cell
+		int16_t stored;				// stored / 10 = MWh stored
+		uint8_t cells;				// number of cells
+	} lithium;
+
+	struct {
+
+	} transmission;
+
+	struct {
+
+	} transformer;
+} SIM_LOCAL_DATA;
 
 typedef union {
 	SIM_REQUEST_DATA request;
@@ -128,7 +179,8 @@ typedef struct {
 	SIM_REQUEST_DATA game;
 	SIM_RESPONSE_DATA local;
 	SIM_UPDATE_DATA received;
-} SIM_LOCAL_DATA;
+	SIM_LOCAL_DATA other;
+} SIM_DATA;
 
 typedef struct {
 	UART_HandleTypeDef *huart;

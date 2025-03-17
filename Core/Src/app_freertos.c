@@ -93,7 +93,10 @@ static int adjustMin, adjustMax;
 int16_t realPower, reactivePower;
 int totalLoad;
 int transformerStatus;
+int hostFreq, hostPower;
 
+//servo variables
+int8_t servo_speed;
 
 /* USER CODE END Variables */
 /* Definitions for NeoPixelTask */
@@ -341,7 +344,8 @@ void StartDisplayTask(void *argument)
 {
   /* USER CODE BEGIN DisplayTask */
   ssd1306_Init();
-
+  //default menu
+  currentMenu = &windMenu;
   /* Infinite loop */
   for(;;)
   {
@@ -359,8 +363,8 @@ void StartDisplayTask(void *argument)
             }
             osDelay(100);
         }
-//    	realPower = self.local.bus.real;
-//    	reactivePower = self.local.bus.reactive;
+    	realPower = self.local.bus.real/100;
+    	reactivePower = self.local.bus.reactive/100;
 
     } else if (currentMenu->adjustFunc != NULL) {
         // Call the adjustment function (which now wakes the task)
@@ -387,10 +391,9 @@ void StartServoTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-      Servo_SetSpeed(-50); // Rotate FS90R at 50% speed CCW
-      osDelay(1000);
-      realPower = (realPower + 5) % 500;  // Example: Cycle between 0-500
-      reactivePower = (reactivePower + 2) % 200;  // Example: Cycle between 0-200
+	servo_speed = self.other.wind.speed * (-1/2);  //speed as a percentage
+	Servo_SetSpeed(servo_speed); // Rotate FS90R at according to speed of the turbine
+	osDelay(1000);
   }
   /* USER CODE END ServoTask */
 }
@@ -849,7 +852,6 @@ void StartValueTask(void *argument)
 //     }
 //
 //	  // Reset adjustment mode
-//	  //valueToAdjust = NULL;
 //	  navigateBack();
       osDelay(1);
   }

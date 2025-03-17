@@ -18,6 +18,7 @@ Menu *currentMenu;
 // **Independent values for each module**
 extern int16_t realPower, reactivePower;
 extern int totalLoad;
+extern int hostFreq, hostPower;
 extern int transformerStatus;
 
 // Adjusting value
@@ -26,8 +27,8 @@ int adjustReactive = 100;
 int rampRate = 100;
 
 /*Declare menus*/
-Menu hostMenu, ccgtMenu, transformerMenu, cityMenu, transmissionMenu;
-Menu hostInfoMenu, ccgtInfoMenu, transformerInfoMenu, cityInfoMenu, transmissionInfoMenu;
+Menu hostMenu, ccgtMenu, transformerMenu, cityMenu, transmissionMenu, windMenu;
+Menu hostInfoMenu, ccgtInfoMenu, transformerInfoMenu, cityInfoMenu, transmissionInfoMenu, windInfoMenu;
 Menu ccgtSetpointMenu;
 //Add adjust menu
 Menu ccgtActive, ccgtReactive, ccgtRamp;
@@ -86,6 +87,7 @@ const char *transformerItems[] = {"Module Info", "Tap Changer"};
 const char *cityItems[] = {"Module Info", "Load Value"};
 const char *transmissionItems[] = {"Module Info", "Resistance", "Reactance"};
 const char *ccgtItems[] = {"Module Info", "Setpoints"};
+const char *windItems [] = {"Module Info", "Setpoints"};
 // Module Info Items //pretty sure im not displaying this
 const char *hostInfoItems[] = {"Host Data", "Back"};
 const char *transformerInfoItems[] = {"Transformer Data", "Back"};
@@ -105,6 +107,7 @@ Menu *transformerSubmenus[] = {&transformerInfoMenu, NULL};
 Menu *citySubmenus[] = {&cityInfoMenu, NULL};
 Menu *transmissionSubmenus[] = {&transmissionInfoMenu,NULL, NULL};
 Menu *ccgtSubmenus[] = {&ccgtInfoMenu, &ccgtSetpointMenu};
+Menu *windSubmenus[] = {&windInfoMenu};
 
 //Setpoint submenus
 Menu *ccgtSetpointSubmenu[] = {&ccgtActive, &ccgtReactive, &ccgtRamp, NULL};
@@ -143,13 +146,40 @@ void setupMenus(void) {
     transmissionMenu.parentMenu = NULL;
     transmissionMenu.showInfo = NULL;
 
-    // Generator Menu
+    // CCGT Generator Menu
     ccgtMenu.title = "CCGT";
     ccgtMenu.items = ccgtItems;
-    ccgtMenu.itemCount = 3;
+    ccgtMenu.itemCount = 2;
     ccgtMenu.subMenus = ccgtSubmenus;
     ccgtMenu.parentMenu = NULL;
     ccgtMenu.showInfo = NULL;
+
+    // Wind Generator Menu
+    windMenu.title = "Wind Generator";
+    windMenu.items = windItems;
+    windMenu.itemCount = 2;
+    windMenu.subMenus = windSubmenus;
+    windMenu.parentMenu = NULL;
+    windMenu.showInfo = NULL;
+    windMenu.adjustFunc = NULL;
+
+    // Wind Generator Info Menu
+    windMenu.title = "Wind ";
+    windMenu.items = NULL;
+    windMenu.itemCount = 0;
+    windMenu.subMenus = NULL;
+    windMenu.parentMenu = &windMenu;
+    windMenu.showInfo = ShowGeneratorInfo;
+    windMenu.adjustFunc = NULL;
+
+    //Host Grid Info Menu
+    hostInfoMenu.title = "Grid Info";
+    hostInfoMenu.items = hostInfoItems;
+    hostInfoMenu.itemCount = 2;
+    hostInfoMenu.subMenus = NULL;
+    hostInfoMenu.parentMenu = &hostMenu;
+    hostInfoMenu.showInfo = ShowHostInfo;
+    hostInfoMenu.adjustFunc = NULL;
 
     // Transformer Module Info Menu
     transformerInfoMenu.title = "Transformer Info";
@@ -181,13 +211,13 @@ void setupMenus(void) {
     ccgtInfoMenu.itemCount = 2;
     ccgtInfoMenu.subMenus = NULL;
     ccgtInfoMenu.parentMenu = &ccgtMenu;
-    ccgtInfoMenu.showInfo = ShowCCGTInfo;
+    ccgtInfoMenu.showInfo = ShowGeneratorInfo;
 
     // CCGT Setpoint Menu
     ccgtSetpointMenu.title = "CCGT Setpoint";
     ccgtSetpointMenu.items = ccgtSetpoints;
     ccgtSetpointMenu.itemCount = 4;
-    ccgtSetpointMenu.subMenus = &ccgtSetpointSubmenu;
+    ccgtSetpointMenu.subMenus = ccgtSetpointSubmenu;
     ccgtSetpointMenu.parentMenu = &ccgtMenu;
     //ccgtInfoMenu.showInfo = NULL;
 
@@ -217,29 +247,43 @@ void setupMenus(void) {
     ccgtRamp.parentMenu = &ccgtSetpointMenu;
     ccgtRamp.showInfo = NULL;
     ccgtRamp.adjustFunc = AdjustRamp;
-
-    //default menu
-    currentMenu = &ccgtMenu;
 }
 
 // **Module-specific display functions**
+void ShowHostInfo(){
+    ssd1306_SetCursor(10, 17);
+    ssd1306_WriteString("Frequency:", Font_7x10, White);
+
+    char buffer[10];
+    sprintf(buffer, "%d", hostFreq);
+    ssd1306_SetCursor(10, 27);
+    ssd1306_WriteString(buffer, Font_7x10, White);
+
+    ssd1306_SetCursor(10, 37);
+    ssd1306_WriteString("Total Power:", Font_7x10, White);
+
+    sprintf(buffer, "%d", hostPower);
+    ssd1306_SetCursor(10, 47);
+    ssd1306_WriteString(buffer, Font_7x10, White);
+}
+
 void ShowTransformerInfo() {
-    ssd1306_SetCursor(10, 20);
+    ssd1306_SetCursor(10, 17);
     ssd1306_WriteString("Transformer Status:", Font_7x10, White);
 
     char buffer[10];
     sprintf(buffer, "%d", transformerStatus);
-    ssd1306_SetCursor(10, 40);
+    ssd1306_SetCursor(10, 27);
     ssd1306_WriteString(buffer, Font_7x10, White);
 }
 
 void ShowCityInfo() {
-    ssd1306_SetCursor(10, 20);
-    ssd1306_WriteString("Total Load:", Font_7x10, White);
+    ssd1306_SetCursor(10, 17);
+    ssd1306_WriteString("Total load:", Font_7x10, White);
 
     char buffer[10];
     sprintf(buffer, "%d", totalLoad);
-    ssd1306_SetCursor(10, 40);
+    ssd1306_SetCursor(10, 27);
     ssd1306_WriteString(buffer, Font_7x10, White);
 }
 
@@ -253,7 +297,7 @@ void ShowTransmissionInfo() {
     ssd1306_WriteString(buffer, Font_7x10, White);
 }
 
-void ShowCCGTInfo() {
+void ShowGeneratorInfo() {
     ssd1306_SetCursor(10, 17);
     ssd1306_WriteString("Real Power:", Font_7x10, White);
 

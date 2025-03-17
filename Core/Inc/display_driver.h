@@ -44,6 +44,9 @@ extern Menu genMenu;
 extern Menu CDCsubmenu1;
 extern Menu CDCsubmenu2;
 extern Menu CDCmenu;
+//new names
+extern Menu windMenu;
+extern Menu ccgtMenu;
 
 extern uint8_t currentIndex;
 extern Menu *currentMenu;
@@ -70,7 +73,8 @@ void liveUpdate(void);
 void ShowTransformerInfo(void);
 void ShowCityInfo(void);
 void ShowTransmissionInfo(void);
-void ShowCCGTInfo(void);
+void ShowGeneratorInfo(void);
+void ShowHostInfo(void);
 
 // Function Prototypes for adjusting
 void StartAdjustmentMode(int *value, const char *label, int min, int max);

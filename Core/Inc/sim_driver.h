@@ -37,7 +37,7 @@
 
 #define SIM_CITY						8
 #define SIM_FACTORY					9
-#define SIM_DATACENTER			10
+#define SIM_CARPARK					10
 
 #define SIM_PUMPEDHYDRO			12
 #define SIM_LITHIUM					13
@@ -58,7 +58,7 @@ typedef struct {
 
 typedef struct {
 	uint8_t mode;						// game mode
-	uint16_t time;					// game time | time / 240 = day
+	int8_t time;					// game time | negative: night, positive: day
 	int8_t frequency;				// (frequency / 255) + 1 = current frequency / rated frequency
 } SIM_REQUEST_DATA;
 
@@ -106,7 +106,7 @@ typedef union {
 	struct {
 		uint8_t	rating;				// rating / 10 = maximum turbine MW
 		uint8_t turbines;			// turbines * rating = maximum farm MW
-		uint8_t windspeed;		// windspeed / 10 = ms^-1
+		int16_t speed;				// speed / 10 = ms^-1
 		uint8_t rated;				// rated / 10 = speed at which rating MW is produced
 		uint8_t cutout;				// cutout / 10 = cut out speed
 		uint8_t cutin;				// cutin / 10 = cut in speed

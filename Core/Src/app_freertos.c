@@ -48,6 +48,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+extern RNG_HandleTypeDef hrng;
+
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
@@ -59,15 +61,18 @@ extern uint8_t currentIndex;
 extern Menu *currentMenu;
 extern uint8_t startIndex;
 
-uint8_t display;
-uint8_t servo;
-uint8_t uart;
-uint8_t neopixel;
-
 // Encoder variables
 int16_t encoderPosition = 0;
 int16_t lastEncoderPosition = 0;
 uint8_t buttonPressed = 0;
+
+// Simulation variables
+SIM_DATA self;
+SIM_PORT SIM_PORTS[3] = {
+		{.huart = &huart1, .tx_queue = &UARTTx1QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
+		{.huart = &huart2, .tx_queue = &UARTTx2QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
+		{.huart = &huart3, .tx_queue = &UARTTx3QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
+};
 
 /* USER CODE END Variables */
 /* Definitions for NeoPixelTask */
@@ -335,12 +340,60 @@ void StartServoTask(void *argument)
 }
 
 /* USER CODE BEGIN Header_StartUARTTask */
-SIM_DATA self;
-SIM_PORT SIM_PORTS[3] = {
-		{.huart = &huart1, .tx_queue = &UARTTx1QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
-		{.huart = &huart2, .tx_queue = &UARTTx2QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
-		{.huart = &huart3, .tx_queue = &UARTTx3QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
-};
+void SIM_Init(SIM_DATA obj) {
+	// TODO read from dip switches to find module type
+	obj.module = SIM_MASTER;
+	obj.mapped = 0;
+
+	switch (obj.module) {
+	case SIM_CCGT:
+		obj.other.ccgt.setpoint = 1500; 			// 150 MW
+		obj.other.ccgt.delta = 200; 					// 200 / 255
+		break;
+	case SIM_NUCLEAR:
+		obj.other.nuclear.setpoint = 6000; 		// 600 MW
+		obj.other.nuclear.delta = 10; 				// 10 / 255
+		break;
+	case SIM_WIND:
+		obj.other.wind.speed = 50; 						// 5 ms^-1
+		obj.other.wind.turbines = 100;
+		obj.other.wind.rating = 50; 					// 5 MW
+		obj.other.wind.rated = 130; 					// 13 ms^-1
+		obj.other.wind.cutin = 20; 						// 2 ms^-1
+		obj.other.wind.cutout = 220; 					// 22 ms^-1
+		break;
+	case SIM_SOLAR:
+		obj.other.solar.area = 5000; 					// 5000 m^2
+		break;
+	case SIM_CITY:
+		obj.other.city.population = 1000; 		// 1 million people = 1000 MW
+		break;
+	case SIM_FACTORY:
+		obj.other.factory.setpoint = -1000; 	// -100 MW
+		obj.other.factory.delta = 150; 				// 150 / 255
+		break;
+	case SIM_CARPARK:
+		obj.other.carpark.spaces = 200;
+		break;
+	case SIM_PUMPEDHYDRO:
+		obj.other.phydro.setpoint = 0;				// 0 MW
+		obj.other.phydro.delta = 150;					// 150 / 255
+		obj.other.phydro.stored = 0;
+		break;
+	case SIM_LITHIUM:
+		obj.other.lithium.capacity = 1;				// 100kWh / cell
+		obj.other.lithium.cells = 20;
+		obj.other.lithium.stored = 0;
+		break;
+	}
+
+	// begin recursive DMA receives for every port
+	for (uint8_t port = 0; port < 3; port++) {
+		HAL_UARTEx_ReceiveToIdle_DMA(SIM_PORTS[port].huart, (uint8_t*) SIM_PORTS[port].rx_buf, SIM_MSG_LEN);
+	}
+
+
+}
 
 uint8_t SIM_UART_FindPort(UART_HandleTypeDef *huart) {
 	for (uint8_t port = 0; port < 3; port++) {
@@ -359,6 +412,13 @@ void SIM_UART_Transmit(uint8_t port, SIM_MESSAGE message) {
 		SIM_EVENT event = {.huart = SIM_PORTS[port].huart, .message = &SIM_PORTS[port].tx_buf[buf_ctr]};
 		osMessageQueuePut(*SIM_PORTS[port].tx_queue, &event, 0, 0);
 	}
+}
+
+int16_t SIM_RandInt(int16_t lower, int16_t upper) {
+	uint32_t random;
+	HAL_RNG_GenerateRandomNumber(&hrng, (uint32_t *) &random);
+
+	return (random % (upper - lower)) + lower;
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
@@ -396,13 +456,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 void StartUARTTask(void *argument)
 {
   /* USER CODE BEGIN UARTTask */
-	self.module = SIM_CCGT;
-	self.mapped = 0;
-
-	// begin recursive DMA receives for every port
-	for (uint8_t port = 0; port < 3; port++) {
-		HAL_UARTEx_ReceiveToIdle_DMA(SIM_PORTS[port].huart, (uint8_t*) SIM_PORTS[port].rx_buf, SIM_MSG_LEN);
-	}
+	SIM_Init(self);
 
 	/* Infinite loop */
 	for (;;) {
@@ -449,6 +503,77 @@ void StartUARTTask(void *argument)
 				SIM_UART_Transmit(self.left, copy);
 				copy.meta.path |= 0x01 << (copy.meta.location - 1);
 				SIM_UART_Transmit(self.right, copy);
+
+				// update game state
+				switch (self.module) {
+					case SIM_CCGT: {
+						// generation approaches setpoint
+						float real = (float) self.local.bus.real / 100;
+						float setpoint = (float) self.other.ccgt.setpoint / 100;
+						float ratio = (float) self.other.ccgt.delta / 255;
+						self.local.bus.real = (int16_t) (100 * (real + (ratio * (setpoint - real / setpoint))));
+						break;
+					}
+					case SIM_NUCLEAR: {
+						// generation approaches setpoint
+						float real = (float) self.local.bus.real / 100;
+						float setpoint = (float) self.other.nuclear.setpoint / 100;
+						float ratio = (float) self.other.nuclear.delta / 255;
+						self.local.bus.real = (int16_t) (100 * (real + (ratio * (setpoint - real / setpoint))));
+						break;
+					}
+					case SIM_WIND: {
+						// set new wind speed
+						int16_t change = SIM_RandInt(-5, 6);
+						if (self.other.wind.speed + change > 300) self.other.wind.speed = 300;
+						else if (self.other.wind.speed + change < 0) self.other.wind.speed = 0;
+						else self.other.wind.speed += change;
+
+						// update generation
+						if (self.other.wind.speed <= self.other.wind.cutin || self.other.wind.speed >= self.other.wind.cutout) {
+							self.local.bus.real = 0;
+						} else if (self.other.wind.speed >= self.other.wind.rated) {
+							self.local.bus.real = self.other.wind.rating * self.other.wind.turbines;
+						} else {
+							self.local.bus.real = self.other.wind.rating;
+						}
+						break;
+					}
+					case SIM_SOLAR: {
+						// set new intensity
+						if (self.game.time == 0) self.other.solar.intensity = SIM_RandInt(10, 255);
+						else if (self.game.time == 127) self.other.solar.intensity = 0;
+
+						// update generation
+
+						break;
+					}
+					case SIM_CITY: {
+						break;
+					}
+					case SIM_FACTORY: {
+						if (self.game.time == 0) self.other.solar.intensity = SIM_RandInt(10, 255);
+						if (self.game.time == 127) self.other.solar.intensity = 0;
+						break;
+					}
+					case SIM_CARPARK: {
+						// slight random variation
+						self.local.bus.real = self.other.carpark.spaces;
+						break;
+					}
+					case SIM_PUMPEDHYDRO: {
+						break;
+					}
+					case SIM_LITHIUM: {
+						break;
+					}
+					case SIM_TRANSMISSION: {
+						break;
+					}
+					case SIM_TRANSFORMER: {
+						break;
+					}
+				}
 
 				// send your local data upstream to the master
 				SIM_MESSAGE response;

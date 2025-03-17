@@ -678,51 +678,52 @@ void StartValueTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-     // **Wait for a trigger (semaphore)**
-     osSemaphoreAcquire(AdjustSemHandle, osWaitForever);
-
-     while (1) {
-         // Update encoder position
-         encoderPosition = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
-
-         if (encoderPosition > lastEncoderPosition) {
-             *adjustingValue = (*adjustingValue < adjustMax) ? *adjustingValue + 1 : adjustMax;
-         }
-         else if (encoderPosition < lastEncoderPosition) {
-             *adjustingValue = (*adjustingValue > adjustMin) ? *adjustingValue - 1 : adjustMin;
-         }
-         lastEncoderPosition = encoderPosition;
-
-         // Display Adjustment Screen
-         if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
-             ssd1306_Fill(Black);
-             ssd1306_SetCursor(10, 10);
-             ssd1306_WriteString(adjustLabel, Font_11x18, White);
-             ssd1306_SetCursor(10, 30);
-
-             char buffer[10];
-             sprintf(buffer, "%d", *adjustingValue);
-             ssd1306_WriteString(buffer, Font_11x18, White);
-
-             ssd1306_SetCursor(10, 60);
-             ssd1306_WriteString("Exit: Press Button", Font_6x8, White);
-
-             ssd1306_UpdateScreen();
-             osMutexRelease(displayMutexHandle);
-         }
-
-         // **Exit if button is pressed**
-         if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_14) == GPIO_PIN_RESET) {
-             osDelay(200);  // Debounce delay
-             break;
-         }
-
-         osDelay(50);
-     }
-
-	  // Reset adjustment mode
-	  //valueToAdjust = NULL;
-	  navigateBack();
+//     // **Wait for a trigger (semaphore)**
+//     osSemaphoreAcquire(AdjustSemHandle, osWaitForever);
+//
+//     while (1) {
+//         // Update encoder position
+//         encoderPosition = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
+//
+//         if (encoderPosition > lastEncoderPosition) {
+//             *adjustingValue = (*adjustingValue < adjustMax) ? *adjustingValue + 1 : adjustMax;
+//         }
+//         else if (encoderPosition < lastEncoderPosition) {
+//             *adjustingValue = (*adjustingValue > adjustMin) ? *adjustingValue - 1 : adjustMin;
+//         }
+//         lastEncoderPosition = encoderPosition;
+//
+//         // Display Adjustment Screen
+//         if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
+//             ssd1306_Fill(Black);
+//             ssd1306_SetCursor(10, 10);
+//             ssd1306_WriteString(adjustLabel, Font_11x18, White);
+//             ssd1306_SetCursor(10, 30);
+//
+//             char buffer[10];
+//             sprintf(buffer, "%d", *adjustingValue);
+//             ssd1306_WriteString(buffer, Font_11x18, White);
+//
+//             ssd1306_SetCursor(10, 60);
+//             ssd1306_WriteString("Exit: Press Button", Font_6x8, White);
+//
+//             ssd1306_UpdateScreen();
+//             osMutexRelease(displayMutexHandle);
+//         }
+//
+//         // **Exit if button is pressed**
+//         if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_14) == GPIO_PIN_RESET) {
+//             osDelay(200);  // Debounce delay
+//             break;
+//         }
+//
+//         osDelay(50);
+//     }
+//
+//	  // Reset adjustment mode
+//	  //valueToAdjust = NULL;
+//	  navigateBack();
+      osDelay(1);
   }
   /* USER CODE END ValueTask */
 }

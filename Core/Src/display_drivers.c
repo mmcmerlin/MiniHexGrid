@@ -106,6 +106,8 @@ Menu *citySubmenus[] = {&cityInfoMenu, NULL};
 Menu *transmissionSubmenus[] = {&transmissionInfoMenu,NULL, NULL};
 Menu *ccgtSubmenus[] = {&ccgtInfoMenu, &ccgtSetpointMenu};
 
+//Setpoint submenus
+Menu *ccgtSetpointSubmenu[] = {&ccgtActive, &ccgtReactive, &ccgtRamp, NULL};
 
 //Setup Menus
 void setupMenus(void) {
@@ -185,7 +187,7 @@ void setupMenus(void) {
     ccgtSetpointMenu.title = "CCGT Setpoint";
     ccgtSetpointMenu.items = ccgtSetpoints;
     ccgtSetpointMenu.itemCount = 4;
-    ccgtSetpointMenu.subMenus = &ccgtActive, &ccgtReactive, &ccgtRamp, NULL;
+    ccgtSetpointMenu.subMenus = &ccgtSetpointSubmenu;
     ccgtSetpointMenu.parentMenu = &ccgtMenu;
     //ccgtInfoMenu.showInfo = NULL;
 

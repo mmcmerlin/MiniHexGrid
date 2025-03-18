@@ -61,3 +61,7 @@ void NEOPIXEL_Callback() {
 	HAL_TIM_PWM_Stop_DMA(&NEOPIXEL_TIM, NEOPIXEL_TIM_CHANNEL);
 	NEOPIXEL_DMA_COMPLETE_FLAG = 1;
 }
+
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
+	NEOPIXEL_Callback();
+}

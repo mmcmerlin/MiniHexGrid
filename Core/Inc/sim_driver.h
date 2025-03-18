@@ -12,6 +12,7 @@
  * Includes
  */
 #include "stm32h5xx_hal.h"
+#include "cmsis_os2.h"
 
 /*
  * Defines
@@ -58,14 +59,14 @@ typedef struct {
 
 typedef struct {
 	uint8_t mode;						// game mode
-	int8_t time;					// game time | negative: night, positive: day
+	int8_t time;						// game time | negative: night, positive: day
 	int8_t frequency;				// (frequency / 255) + 1 = current frequency / rated frequency
 } SIM_REQUEST_DATA;
 
 typedef union {
 	struct {
-		int16_t real;					// real / 100 = MW real power
-		int16_t reactive;			// reactive / 100 = MVAr reactive power
+		int16_t real;					// real / 10 = MW real power
+		int16_t reactive;			// reactive / 10 = MVAr reactive power
 	} bus;
 
 	struct {
@@ -80,26 +81,26 @@ typedef union {
 typedef union {
 	struct {
 		int8_t voltage;				// (voltage / 255) + 1 = pu voltage
-		int16_t reactive;			// reactive / 100 = MVAr reactive power
+		int16_t reactive;			// reactive / 10 = MVAr reactive power
 	} bus;
 
 	struct {
-		int16_t mva;					// mva / 100 = MVA line flow
+		int16_t mva;					// mva / 10 = MVA line flow
 	} line;
 
 	struct {
-		int16_t mva;					// mva / 100 = MVA transformer flow
+		int16_t mva;					// mva / 10 = MVA transformer flow
 	} transformer;
 } SIM_UPDATE_DATA;
 
 typedef union {
 	struct {
-		int16_t setpoint;			// setpoint / 100 = MW real power
+		int16_t setpoint;			// setpoint / 10 = MW real power
 		uint8_t delta;
 	} ccgt;
 
 	struct {
-		int16_t setpoint;			// setpoint / 100 = MW real power
+		int16_t setpoint;			// setpoint / 10 = MW real power
 		uint8_t delta;
 	} nuclear;
 
@@ -126,14 +127,14 @@ typedef union {
 	} carpark;
 
 	struct {
-		int16_t setpoint;			// setpoint / 100 = MW real power
+		int16_t setpoint;			// setpoint / 10 = MW real power
 		uint8_t delta;
 	} factory;
 
 	struct {
 		int16_t volume;				// volume / 10 = max MWh stored
 		int16_t stored;				// stored / 10 = MWh stored
-		int16_t setpoint;			// setpoint / 100 = MW real power
+		int16_t setpoint;			// setpoint / 10 = MW real power
 		uint8_t delta;
 	} phydro;
 
@@ -150,6 +151,13 @@ typedef union {
 	struct {
 
 	} transformer;
+
+	struct {
+		int32_t realgen;
+		int32_t reactivegen;
+		int32_t realload;
+		int32_t reactiveload;
+	} master;
 } SIM_LOCAL_DATA;
 
 typedef union {
@@ -158,9 +166,12 @@ typedef union {
 	SIM_UPDATE_DATA update;
 } SIM_MESSAGE_DATA;
 
-typedef struct {
-	SIM_METADATA meta;
-	SIM_MESSAGE_DATA data;
+typedef union {
+	struct {
+		SIM_METADATA meta;
+		SIM_MESSAGE_DATA data;
+	};
+	uint8_t buffer[SIM_MSG_LEN];
 } SIM_MESSAGE;
 
 typedef struct {
@@ -176,6 +187,7 @@ typedef struct {
 	uint8_t upstream;
 	uint8_t left;
 	uint8_t right;
+	uint8_t disabled;
 	SIM_REQUEST_DATA game;
 	SIM_RESPONSE_DATA local;
 	SIM_UPDATE_DATA received;
@@ -190,5 +202,15 @@ typedef struct {
 	uint8_t rx_ctr : 4;
 	uint8_t tx_ctr : 4;
 } SIM_PORT;
+
+void SIM_Init();
+
+uint8_t SIM_FindPort(UART_HandleTypeDef *huart);
+
+void SIM_Transmit(uint8_t port, SIM_MESSAGE message);
+
+int16_t SIM_RandInt(int16_t lower, int16_t upper);
+
+uint8_t SIM_Compatible(uint8_t type1, uint8_t type2);
 
 #endif /* INC_SIM_DRIVER_H_ */

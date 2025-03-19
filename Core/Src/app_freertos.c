@@ -79,17 +79,6 @@ static int *adjustingValue;
 static const char *adjustLabel;
 static int adjustMin, adjustMax;
 
-//Adjusting encoder value
-//int *valueToAdjust = NULL;  // Initialize as NULL
-//char labelToShow[20];
-//int minVal, maxVal;
-////default values
-//int tapChange = 100;
-//int load = 100;
-//int resist = 100;
-//int react = 50;
-//int active = 100;
-//int reactive = 20;
 int16_t realPower, reactivePower;
 int totalLoad;
 int transformerStatus;
@@ -232,19 +221,19 @@ void MX_FREERTOS_Init(void) {
   NeoPixelTaskHandle = osThreadNew(StartNeoPixelTask, NULL, &NeoPixelTask_attributes);
 
   /* creation of EncoderTask */
-  // EncoderTaskHandle = osThreadNew(StartEncoderTask, NULL, &EncoderTask_attributes);
+   EncoderTaskHandle = osThreadNew(StartEncoderTask, NULL, &EncoderTask_attributes);
 
   /* creation of DisplayTask */
-  // DisplayTaskHandle = osThreadNew(StartDisplayTask, NULL, &DisplayTask_attributes);
+   DisplayTaskHandle = osThreadNew(StartDisplayTask, NULL, &DisplayTask_attributes);
 
   /* creation of ServoTask */
-  // ServoTaskHandle = osThreadNew(StartServoTask, NULL, &ServoTask_attributes);
+   ServoTaskHandle = osThreadNew(StartServoTask, NULL, &ServoTask_attributes);
 
   /* creation of UARTTask */
   UARTTaskHandle = osThreadNew(StartUARTTask, NULL, &UARTTask_attributes);
 
   /* creation of ButtonTask */
-  // ButtonTaskHandle = osThreadNew(StartButtonTask, NULL, &ButtonTask_attributes);
+   ButtonTaskHandle = osThreadNew(StartButtonTask, NULL, &ButtonTask_attributes);
 
   /* creation of GameTask */
   GameTaskHandle = osThreadNew(StartGameTask, NULL, &GameTask_attributes);
@@ -327,8 +316,6 @@ void StartDisplayTask(void *argument)
 {
   /* USER CODE BEGIN DisplayTask */
   ssd1306_Init();
-  //default menu
-  currentMenu = &windMenu;
   /* Infinite loop */
   for(;;)
   {
@@ -346,8 +333,8 @@ void StartDisplayTask(void *argument)
             }
             osDelay(100);
         }
-    	realPower = self.local.bus.real/100;
-    	reactivePower = self.local.bus.reactive/100;
+    	realPower = self.local.bus.real/10;
+    	reactivePower = self.local.bus.reactive/10;
 
     } else if (currentMenu->adjustFunc != NULL) {
         // Call the adjustment function (which now wakes the task)
@@ -374,8 +361,10 @@ void StartServoTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	servo_speed = self.other.wind.speed * (-1/2);  //speed as a percentage
-	Servo_SetSpeed(servo_speed); // Rotate FS90R at according to speed of the turbine
+//      realPower = (realPower + 5) % 500;  // Example: Cycle between 0-500
+//      reactivePower = (reactivePower + 2) % 200;  // Example: Cycle between 0-200
+	//servo_speed = self.other.wind.speed * (-1/2);  //speed as a percentage
+	Servo_SetSpeed(-25); // Rotate FS90R at according to speed of the turbine
 	osDelay(1000);
   }
   /* USER CODE END ServoTask */

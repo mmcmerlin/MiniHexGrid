@@ -27,73 +27,27 @@ int adjustReactive = 100;
 int rampRate = 100;
 
 /*Declare menus*/
-Menu hostMenu, ccgtMenu, transformerMenu, cityMenu, transmissionMenu, windMenu;
-Menu hostInfoMenu, ccgtInfoMenu, transformerInfoMenu, cityInfoMenu, transmissionInfoMenu, windInfoMenu;
+Menu hostMenu, ccgtMenu, transformerMenu, cityMenu, transmissionMenu;
+Menu windMenu, windInfoMenu;
+Menu hostInfoMenu, ccgtInfoMenu, transformerInfoMenu, cityInfoMenu, transmissionInfoMenu;
 Menu ccgtSetpointMenu;
 //Add adjust menu
 Menu ccgtActive, ccgtReactive, ccgtRamp;
 
-//Old
-///* Menu Items */
-//const char *hostItems[] = {"Grid info", "Game mode"};
-//const char *transformerItems[] = {"Module info", "Set values"};
-//const char *tformerSubmenuItems[] = {"Tap changer", "Back"};
-//const char *cityMenuItems[] = {"Module info", "Set values"};
-//const char *citySubmenuItems[] = {"Load value", "Back"};
-//const char *tmissionMenuItems[] = {"Module info", "Set values"};
-//const char *tmissionSubmenuItems[] = {"Resistance", "Reactance", "Back"};
-//const char *genMenuItems[] = {"Module info", "Set values"};
-//const char *genSubmenuItems[] = {"Active","Reactive", "Back"};
-//const char *hostModeItems[] = {"Mode 1", "Mode 2", "Back"}; //ask what game modes to add
-//const char *CDCsubmenu2Items[] = {"Option 1", "Option 2", "Back"};
-//
-///* Submenus */
-//Menu tformerModule = {tformerSubmenuItems, 2, NULL, NULL};
-//Menu *tformerSubmenu[] = {&tformerModule};
-//Menu tformerMenu = {tformerMenuItems, 1, tformerSubmenu, NULL};
-//Menu cityModule = {citySubmenuItems, 2, NULL, NULL};
-//Menu *citySubmenu[] = {&cityModule};
-//Menu cityMenu = {cityMenuItems, 1, citySubmenu, NULL};
-//Menu tmissionModule = {tmissionSubmenuItems, 3, NULL, NULL};
-//Menu *tmissionSubmenu[] = {&tmissionModule};
-//Menu tmissionMenu = {tmissionMenuItems, 1, tmissionSubmenu, NULL};
-//Menu genModule = {genSubmenuItems, 3, NULL, NULL};
-//Menu *genSubmenu[] = {&genModule};
-//Menu genMenu = {genMenuItems, 1, genSubmenu, NULL};
-//Menu CDCsubmenu1 = {CDCsubmenu1Items, 3, NULL, NULL};
-//Menu CDCsubmenu2 = {CDCsubmenu2Items, 3, NULL, NULL};
-//Menu *CDCsubMenus[] = {&CDCsubmenu1, &CDCsubmenu2};
-//Menu CDCmenu = {CDCmenuItems,2, CDCsubMenus, NULL};
-//
-//void setupParentMenus(void) {
-//    tformerModule.parentMenu = &tformerMenu;
-//    tformerMenu.parentMenu = NULL; //Top-level menu
-//    cityModule.parentMenu = &cityMenu;
-//    cityMenu.parentMenu = NULL; //Top-level menu
-//    tmissionModule.parentMenu = &tmissionMenu;
-//    tmissionMenu.parentMenu = NULL; //Top-level menu
-//    genModule.parentMenu = &genMenu;
-//    genMenu.parentMenu = NULL; //Top-level menu
-//    CDCsubmenu1.parentMenu = &CDCmenu;
-//    CDCsubmenu2.parentMenu = &CDCmenu;
-//    CDCmenu.parentMenu = NULL; //Top-level menu
-//
-//}
-
-//New
 // Main Menu Items
 const char *hostItems[] = {"Module info", "Game mode"};
 const char *transformerItems[] = {"Module Info", "Tap Changer"};
 const char *cityItems[] = {"Module Info", "Load Value"};
 const char *transmissionItems[] = {"Module Info", "Resistance", "Reactance"};
 const char *ccgtItems[] = {"Module Info", "Setpoints"};
-const char *windItems [] = {"Module Info", "Setpoints"};
+const char *windItems[] = {"Module Info", "Setpoints"};
 // Module Info Items //pretty sure im not displaying this
 const char *hostInfoItems[] = {"Host Data", "Back"};
 const char *transformerInfoItems[] = {"Transformer Data", "Back"};
 const char *cityInfoItems[] = {"City Data", "Back"};
 const char *transmissionInfoItems[] = {"Transmission Data", "Back"};
 const char *ccgtInfoItems[] = {"Generator Data", "Back"};
+const char *windInfoItems[] = {"Generator Data", "Back"};
 // Setpoint Items (TO DO)
 //const char *hostSetpoints[] = {"Mode 1", "Mode 2", "Back"};
 //const char *transformerSetpoints[] = {"Transformer Data", "Back"};
@@ -107,15 +61,18 @@ Menu *transformerSubmenus[] = {&transformerInfoMenu, NULL};
 Menu *citySubmenus[] = {&cityInfoMenu, NULL};
 Menu *transmissionSubmenus[] = {&transmissionInfoMenu,NULL, NULL};
 Menu *ccgtSubmenus[] = {&ccgtInfoMenu, &ccgtSetpointMenu};
-Menu *windSubmenus[] = {&windInfoMenu};
+Menu *windSubmenus[] = {&windInfoMenu, NULL};
 
 //Setpoint submenus
 Menu *ccgtSetpointSubmenu[] = {&ccgtActive, &ccgtReactive, &ccgtRamp, NULL};
 
 //Setup Menus
 void setupMenus(void) {
+	//default menu
+	currentMenu = &hostMenu;
+
     // Initialize Host Menu
-    hostMenu.title = "Welcome!";
+    hostMenu.title = "Host";
     hostMenu.items = hostItems;
     hostMenu.itemCount = 2;
     hostMenu.subMenus = hostSubmenus;
@@ -161,16 +118,15 @@ void setupMenus(void) {
     windMenu.subMenus = windSubmenus;
     windMenu.parentMenu = NULL;
     windMenu.showInfo = NULL;
-    windMenu.adjustFunc = NULL;
 
     // Wind Generator Info Menu
-    windMenu.title = "Wind ";
-    windMenu.items = NULL;
-    windMenu.itemCount = 0;
-    windMenu.subMenus = NULL;
-    windMenu.parentMenu = &windMenu;
-    windMenu.showInfo = ShowGeneratorInfo;
-    windMenu.adjustFunc = NULL;
+    windInfoMenu.title = "Wind Info";
+    windInfoMenu.items = NULL;
+    windInfoMenu.itemCount = 0;
+    windInfoMenu.subMenus = NULL;
+    windInfoMenu.parentMenu = &windMenu;
+    windInfoMenu.showInfo = ShowGeneratorInfo;
+    windInfoMenu.adjustFunc = NULL;
 
     //Host Grid Info Menu
     hostInfoMenu.title = "Grid Info";
@@ -330,24 +286,6 @@ void AdjustRamp(){
 void updateMenuDisplay(void)
 {
 	ssd1306_Fill(Black);
-//Old
-//	if (currentMenu == &tformerMenu) {
-//		ssd1306_SetCursor(10, 0);
-//		ssd1306_WriteString("Transformer menu", Font_7x10, White);
-//	} else if (currentMenu == &cityMenu) {
-//		ssd1306_SetCursor(10, 0);
-//		ssd1306_WriteString("City menu", Font_7x10, White);
-//	} else if (currentMenu == &tmissionMenu) {
-//		ssd1306_SetCursor(10, 0);
-//		ssd1306_WriteString("Transmission menu", Font_7x10, White);
-//	} else if (currentMenu == &genMenu) {
-//		ssd1306_SetCursor(10, 0);
-//		ssd1306_WriteString("Generator menu", Font_7x10, White);
-//	} else if (currentMenu == &CDCmenu) {
-//		ssd1306_SetCursor(10, 0);
-//		ssd1306_WriteString("CDC menu", Font_7x10, White);
-//	}
-
 	//New
 	ssd1306_SetCursor(10, 0);
     // Display menu title

@@ -19,6 +19,11 @@
  */
 #define SIM_MSG_LEN					10
 
+#define SIM_MASTER_PORT			2
+
+// Game constants
+#define SIM_FREQUENCY				50
+
 // Message Types
 #define SIM_CLEAR						0
 #define SIM_REQUEST					1
@@ -43,26 +48,29 @@
 #define SIM_PUMPEDHYDRO			12
 #define SIM_LITHIUM					13
 
-// Game types
-#define SIM_FREQUENCY_GAME	0
-
 /*
- * Message Protocol
+ * @brief Metadata for all communication between modules.
  */
 typedef struct {
-	uint8_t type; 					// message type
-	uint8_t location;				// part of the address, the number of modules away from the master
-	uint16_t path;					// part of the address, series of 0's (right) and 1's (left)
-	uint8_t origin;					// type of module that originated the message
-	uint8_t last;						// type of last module to send this message (a neighbor)
+	uint8_t type; 					/* Message type: CLEAR, REQUEST, RESPONSE, or UPDATE. */
+	uint8_t location;				/* Distance between master and module.								*/
+	uint16_t path;					/* Path to the module, 0 -> Right, 1 -> Left. 				*/
+	uint8_t origin;					/* Type of module that generated this message. 				*/
+	uint8_t last;						/* Last module to send this message.									*/
 } SIM_METADATA;
 
+/*
+ * @brief Data for periodic REQUEST messages sent from the Master.
+ */
 typedef struct {
-	uint8_t mode;						// game mode
-	int8_t time;						// game time | negative: night, positive: day
-	int8_t frequency;				// (frequency / 255) + 1 = current frequency / rated frequency
+	uint8_t mode;						/* Gamemode (Not implemented) 												*/
+	uint8_t time;						/* In-game time | 0-240, time / 10 = hour 						*/
+	int8_t frequency;				/* Frequency | (frequency / 255) + 1 = p.u. frequency */
 } SIM_REQUEST_DATA;
 
+/*
+ * @brief Data for a module's response to the Master.
+ */
 typedef union {
 	struct {
 		int16_t real;					// real / 10 = MW real power
@@ -70,7 +78,7 @@ typedef union {
 	} bus;
 
 	struct {
-		uint8_t type;					// 0 - 10km high quality, 1 - 50km low quality
+		uint8_t type;					// 0 - 50km low quality, 1 - 10km high quality
 	} line;
 
 	struct {
@@ -78,6 +86,9 @@ typedef union {
 	} transformer;
 } SIM_RESPONSE_DATA;
 
+/*
+ * @brief Data for an information update coming from the Master.
+ */
 typedef union {
 	struct {
 		int8_t voltage;				// (voltage / 255) + 1 = pu voltage
@@ -93,6 +104,32 @@ typedef union {
 	} transformer;
 } SIM_UPDATE_DATA;
 
+/*
+ * @brief General message structure that can be accessed differently depending on need.
+ */
+typedef union {
+	struct {
+		SIM_METADATA meta;
+		union {
+			SIM_REQUEST_DATA request;
+			SIM_RESPONSE_DATA response;
+			SIM_UPDATE_DATA update;
+		} data;
+	};
+	uint8_t buffer[SIM_MSG_LEN];
+} SIM_MESSAGE;
+
+/*
+ * @brief Struct to be stored in queues for messages.
+ */
+typedef struct {
+	UART_HandleTypeDef *huart;
+	SIM_MESSAGE *message;
+} SIM_EVENT;
+
+/*
+ * @brief Extra module-dependent data to be stored locally and not transmitted.
+ */
 typedef union {
 	struct {
 		int16_t setpoint;			// setpoint / 10 = MW real power
@@ -145,49 +182,25 @@ typedef union {
 	} lithium;
 
 	struct {
-
-	} transmission;
-
-	struct {
-
-	} transformer;
-
-	struct {
-		int32_t realgen;
-		int32_t reactivegen;
-		int32_t realload;
-		int32_t reactiveload;
+		float realgen;
+		float reactivegen;
+		float realload;
+		float reactiveload;
 	} master;
 } SIM_LOCAL_DATA;
-
-typedef union {
-	SIM_REQUEST_DATA request;
-	SIM_RESPONSE_DATA response;
-	SIM_UPDATE_DATA update;
-} SIM_MESSAGE_DATA;
-
-typedef union {
-	struct {
-		SIM_METADATA meta;
-		SIM_MESSAGE_DATA data;
-	};
-	uint8_t buffer[SIM_MSG_LEN];
-} SIM_MESSAGE;
-
-typedef struct {
-	UART_HandleTypeDef *huart;
-	SIM_MESSAGE *message;
-} SIM_EVENT;
 
 typedef struct {
 	uint8_t module;
 	uint8_t location;
 	uint16_t path;
+
 	uint8_t mapped;
 	uint8_t upstream;
 	uint8_t left;
 	uint8_t right;
+
 	uint8_t disabled;
+
 	SIM_REQUEST_DATA game;
 	SIM_RESPONSE_DATA local;
 	SIM_UPDATE_DATA received;
@@ -197,20 +210,27 @@ typedef struct {
 typedef struct {
 	UART_HandleTypeDef *huart;
 	osMessageQueueId_t *tx_queue;
+
 	SIM_MESSAGE rx_buf[16];
-	SIM_MESSAGE tx_buf[16];
 	uint8_t rx_ctr : 4;
+
+	SIM_MESSAGE tx_buf[16];
 	uint8_t tx_ctr : 4;
 } SIM_PORT;
 
 void SIM_Init();
 
+void SIM_Transmit(uint8_t port, SIM_MESSAGE message);
+
 uint8_t SIM_FindPort(UART_HandleTypeDef *huart);
 
-void SIM_Transmit(uint8_t port, SIM_MESSAGE message);
+uint8_t SIM_Compatible(uint8_t type1, uint8_t type2);
 
 int16_t SIM_RandInt(int16_t lower, int16_t upper);
 
-uint8_t SIM_Compatible(uint8_t type1, uint8_t type2);
+float SIM_GetFrequency();
+
+void SIM_SetFrequency(float frequency);
+
 
 #endif /* INC_SIM_DRIVER_H_ */

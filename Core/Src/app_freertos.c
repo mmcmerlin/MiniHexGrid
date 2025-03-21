@@ -23,7 +23,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "main.h"
-#include <string.h>
+#include "string.h"
+#include "stdlib.h"
 
 #include "display_driver.h"
 #include "servo_routine.h"
@@ -221,19 +222,19 @@ void MX_FREERTOS_Init(void) {
   NeoPixelTaskHandle = osThreadNew(StartNeoPixelTask, NULL, &NeoPixelTask_attributes);
 
   /* creation of EncoderTask */
-   EncoderTaskHandle = osThreadNew(StartEncoderTask, NULL, &EncoderTask_attributes);
+  EncoderTaskHandle = osThreadNew(StartEncoderTask, NULL, &EncoderTask_attributes);
 
   /* creation of DisplayTask */
-   DisplayTaskHandle = osThreadNew(StartDisplayTask, NULL, &DisplayTask_attributes);
+  DisplayTaskHandle = osThreadNew(StartDisplayTask, NULL, &DisplayTask_attributes);
 
   /* creation of ServoTask */
-   ServoTaskHandle = osThreadNew(StartServoTask, NULL, &ServoTask_attributes);
+  ServoTaskHandle = osThreadNew(StartServoTask, NULL, &ServoTask_attributes);
 
   /* creation of UARTTask */
   UARTTaskHandle = osThreadNew(StartUARTTask, NULL, &UARTTask_attributes);
 
   /* creation of ButtonTask */
-   ButtonTaskHandle = osThreadNew(StartButtonTask, NULL, &ButtonTask_attributes);
+  ButtonTaskHandle = osThreadNew(StartButtonTask, NULL, &ButtonTask_attributes);
 
   /* creation of GameTask */
   GameTaskHandle = osThreadNew(StartGameTask, NULL, &GameTask_attributes);
@@ -264,8 +265,8 @@ void StartNeoPixelTask(void *argument)
   NEOPIXEL_Update();
   /* Infinite loop */
   for(;;) {
-  	osDelay(20);
-		NEOPIXEL_Update();
+  	osDelay(510);
+  	NEOPIXEL_Update();
   }
   /* USER CODE END NeoPixelTask */
 }
@@ -664,11 +665,10 @@ void StartGameTask(void *argument)
 		// clear all board addresses on init
 		SIM_MESSAGE clear;
 		clear.meta.type = SIM_CLEAR;
-		SIM_Transmit(0, clear);
+		SIM_Transmit(SIM_MASTER_PORT, clear);
 
 		self.game.time = 0;
 		self.game.frequency = 0;
-		self.game.mode = SIM_FREQUENCY_GAME;
 
 		SIM_MESSAGE request;
 		request.meta.type = SIM_REQUEST;
@@ -676,17 +676,17 @@ void StartGameTask(void *argument)
 		request.meta.location = 0;
 		for(;;) {
 			// clear rx buffer
-			ports[0].rx_ctr = 0;
+			ports[SIM_MASTER_PORT].rx_ctr = 0;
 			for (uint8_t msg = 0; msg < 16; msg++) {
 				for (uint8_t byte = 0; byte < SIM_MSG_LEN; byte++) {
-					ports[0].rx_buf[msg].buffer[byte] = 0;
+					ports[SIM_MASTER_PORT].rx_buf[msg].buffer[byte] = 0;
 				}
 			}
 
 			// send request
 			self.game.time++;
 			request.data.request = self.game;
-			SIM_Transmit(0, request);
+			SIM_Transmit(SIM_MASTER_PORT, request);
 			osDelay(500);
 
 			self.other.master.realgen = 0;
@@ -695,7 +695,7 @@ void StartGameTask(void *argument)
 			self.other.master.reactiveload = 0;
 
 			for (uint8_t loc = 0; loc < 16; loc++) {
-				SIM_MESSAGE tile = ports[0].rx_buf[loc];
+				SIM_MESSAGE tile = ports[SIM_MASTER_PORT].rx_buf[loc];
 				switch (tile.meta.origin) {
 					case SIM_CCGT: {
 						self.other.master.realgen += tile.data.response.bus.real;
@@ -759,6 +759,10 @@ void StartGameTask(void *argument)
 						break;
 					}
 				}
+				float inertia = 50 / 500;
+				float rocof = 1 * ((self.other.master.realgen - self.other.master.realload) / self.other.master.realload);
+				float frequency = SIM_GetFrequency();
+				SIM_SetFrequency(frequency + rocof);
 			}
 
 			// do game

@@ -21,10 +21,16 @@ extern int totalLoad;
 extern int hostFreq, hostPower;
 extern int transformerStatus;
 
-// Adjusting value
+// Default adjusting value
 int adjustActive = 100;
 int adjustReactive = 100;
 int rampRate = 100;
+
+// Variables for Adjusting
+int *adjustingValue;
+const char *adjustLabel;
+int adjustMin, adjustMax;
+
 
 /*Declare menus*/
 Menu hostMenu, ccgtMenu, transformerMenu, cityMenu, transmissionMenu;
@@ -283,7 +289,15 @@ void AdjustRamp(){
 	StartAdjustmentMode(&rampRate, "Adjust Ramp rate", 0, 100);
 }
 
-void updateMenuDisplay(void)
+// Trigger Adjustment Mode
+void StartAdjustmentMode(int *value, const char *label, int min, int max) {
+    adjustingValue = value;
+    adjustLabel = label;
+    adjustMin = min;
+    adjustMax = max;
+}
+
+void updateMenuDisplay()
 {
 	ssd1306_Fill(Black);
 	//New
@@ -312,6 +326,23 @@ void updateMenuDisplay(void)
     }
 	ssd1306_UpdateScreen();
 }
+
+//void updateAdjustDisplay()
+//{
+// ssd1306_Fill(Black);
+// ssd1306_SetCursor(10, 10);
+// ssd1306_WriteString(adjustLabel, Font_11x18, White);
+// ssd1306_SetCursor(10, 25);
+//
+// char buffer[10];
+// sprintf(buffer, "%d", *adjustingValue);
+// ssd1306_WriteString(buffer, Font_11x18, White);
+//
+// ssd1306_SetCursor(10, 50);
+// ssd1306_WriteString("Exit: Press Button", Font_6x8, White);
+//
+// ssd1306_UpdateScreen();
+//}
 
 /*Navigation and selection functions*/
 void displaySelection() {

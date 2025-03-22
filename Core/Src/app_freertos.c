@@ -74,10 +74,6 @@ SIM_PORT ports[3] = {
 		{.huart = &huart2, .tx_queue = &UARTTx2QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
 		{.huart = &huart3, .tx_queue = &UARTTx3QueueHandle, .rx_ctr = 0, .tx_ctr = 0},
 };
-// Variables for Adjusting
-static int *adjustingValue;
-static const char *adjustLabel;
-static int adjustMin, adjustMax;
 
 int16_t realPower, reactivePower;
 int totalLoad;
@@ -335,10 +331,6 @@ void StartDisplayTask(void *argument)
         }
     	realPower = self.local.bus.real/10;
     	reactivePower = self.local.bus.reactive/10;
-
-    } else if (currentMenu->adjustFunc != NULL) {
-        // Call the adjustment function (which now wakes the task)
-        currentMenu->adjustFunc();
     } else {
         osDelay(40); // Normal refresh rate
     }
@@ -361,9 +353,10 @@ void StartServoTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-//      realPower = (realPower + 5) % 500;  // Example: Cycle between 0-500
-//      reactivePower = (reactivePower + 2) % 200;  // Example: Cycle between 0-200
-	//servo_speed = self.other.wind.speed * (-1/2);  //speed as a percentage
+	//Angled servo
+	//insert get freq
+	//Servo_UpdateAngle();  //Angles SG90 according to frequency of grid
+	//Continuous servo
 	Servo_SetSpeed(-25); // Rotate FS90R at according to speed of the turbine
 	osDelay(1000);
   }
@@ -579,65 +572,19 @@ void StartButtonTask(void *argument)
   {
 	if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET && !buttonPressed)
 	{
-		buttonPressed = 1;
-		//test
-		  if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
-			handleSelection();
-			osDelay(50);
-			osMutexRelease(displayMutexHandle);
-		  }
+	buttonPressed = 1;
+	//test
+	  if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
+		handleSelection();
+		osDelay(50);
+		osMutexRelease(displayMutexHandle);
+	  } else if (currentMenu->adjustFunc != NULL) {
+		// Call the adjustment function (which now wakes the task)
+		currentMenu->adjustFunc();
+	    // **Wake up the Adjustment Task**
+	    osSemaphoreRelease(AdjustSemHandle);
+	  }
 
-//test
-//		if (currentMenu == &tformerModule && strcmp(currentMenu->items[currentIndex], "Tap changer") == 0){
-//			valueToAdjust = &tapChange;
-//			strcpy(labelToShow, "Adjust tap value");
-//			minVal = 95;
-//			maxVal = 120;
-//		}
-//		else if (currentMenu == &cityModule && strcmp(currentMenu->items[currentIndex], "Load value") == 0){
-//			valueToAdjust = &load;
-//			strcpy(labelToShow, "Adjust load");
-//			minVal = 50;
-//			maxVal = 1000;
-//		}
-//		else if (currentMenu == &tmissionModule) {
-//			if (strcmp(currentMenu->items[currentIndex], "Resistance") == 0) {
-//				valueToAdjust = &resist;
-//				strcpy(labelToShow, "Adjust resistance");
-//				minVal = 50;
-//				maxVal = 200;
-//			} else if (strcmp(currentMenu->items[currentIndex], "Reactance") == 0) {
-//				valueToAdjust = &react;
-//				strcpy(labelToShow, "Adjust reactance");
-//				minVal = 0;
-//				maxVal = 100;
-//			}
-//		}
-//		else if (currentMenu == &genModule) {
-//			if (strcmp(currentMenu->items[currentIndex], "Active") == 0) {
-//				valueToAdjust = &active;
-//				strcpy(labelToShow, "Adjust active");
-//				minVal = 70;
-//				maxVal = 200;
-//			} else if (strcmp(currentMenu->items[currentIndex], "Reactive") == 0) {
-//				valueToAdjust = &reactive;
-//				strcpy(labelToShow, "Adjust reactive");
-//				minVal = 0;
-//				maxVal = 50;
-//			}
-//		}
-//
-//		if (valueToAdjust != NULL) {
-//			osSemaphoreRelease(AdjustSemHandle); // Start adjustment task
-//			printf("Entering adjustment mode for %s\n", labelToShow); // DEBUG PRINT
-//		}
-//		else {
-//		  if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
-//			handleSelection();
-//			osDelay(50);
-//			osMutexRelease(displayMutexHandle);
-//		  }
-//		}
 	}
 	else if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET)
 	{
@@ -802,24 +749,12 @@ void StartValueTask(void *argument)
 //
 //         // Display Adjustment Screen
 //         if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
-//             ssd1306_Fill(Black);
-//             ssd1306_SetCursor(10, 10);
-//             ssd1306_WriteString(adjustLabel, Font_11x18, White);
-//             ssd1306_SetCursor(10, 30);
-//
-//             char buffer[10];
-//             sprintf(buffer, "%d", *adjustingValue);
-//             ssd1306_WriteString(buffer, Font_11x18, White);
-//
-//             ssd1306_SetCursor(10, 60);
-//             ssd1306_WriteString("Exit: Press Button", Font_6x8, White);
-//
-//             ssd1306_UpdateScreen();
+
 //             osMutexRelease(displayMutexHandle);
 //         }
 //
 //         // **Exit if button is pressed**
-//         if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_14) == GPIO_PIN_RESET) {
+//         if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET) {
 //             osDelay(200);  // Debounce delay
 //             break;
 //         }
@@ -837,16 +772,5 @@ void StartValueTask(void *argument)
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
-
-// **Trigger Adjustment Mode**
-void StartAdjustmentMode(int *value, const char *label, int min, int max) {
-    adjustingValue = value;
-    adjustLabel = label;
-    adjustMin = min;
-    adjustMax = max;
-
-    // **Wake up the Adjustment Task**
-    osSemaphoreRelease(AdjustSemHandle);
-}
 /* USER CODE END Application */
 

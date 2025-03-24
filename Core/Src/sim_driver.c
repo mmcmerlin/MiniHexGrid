@@ -23,7 +23,7 @@ extern osMessageQueueId_t UARTTx3QueueHandle;
 
 void SIM_Init() {
 	// TODO read from dip switches to find module type
-	self.module = SIM_MASTER;
+	self.module = SIM_CITY;
 	self.mapped = 0;
 
 	switch (self.module) {

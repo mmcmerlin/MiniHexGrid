@@ -487,7 +487,7 @@ void StartUARTTask(void *argument)
 							self.local.bus.real = self.other.wind.rating * self.other.wind.turbines;
 						} else {
 							float diff = (float) (self.other.wind.speed - self.other.wind.cutin) / (self.other.wind.cutout - self.other.wind.cutin);
-							self.local.bus.real = diff * self.other.wind.rating * 10;
+							self.local.bus.real = diff * self.other.wind.rating * 100;
 						}
 						break;
 					}
@@ -734,7 +734,6 @@ void StartGameTask(void *argument)
 						break;
 					}
 				}
-				float inertia = 50 / 500;
 				float rocof = 1 * ((self.other.master.realgen - self.other.master.realload) / self.other.master.realload);
 				float frequency = SIM_GetFrequency();
 				SIM_SetFrequency(frequency + rocof);
@@ -744,7 +743,16 @@ void StartGameTask(void *argument)
 		}
 	} else {
 		for(;;) {
-			osDelay(1);
+			// fake messages
+			SIM_MESSAGE message;
+			message.meta.type = SIM_REQUEST;
+			message.data.request.time = self.game.time + 1;
+			ports[0].rx_buf[ports[0].rx_ctr] = message;
+
+			SIM_EVENT event = { .huart = &huart1, .message = (SIM_MESSAGE *) &ports[0].rx_buf[ports[0].rx_ctr++]};
+			osMessageQueuePut(UARTMailQueueHandle, &event, 0, 0);
+
+			osDelay(500);
 		}
 	}
   /* USER CODE END GameTask */

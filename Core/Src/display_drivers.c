@@ -25,6 +25,9 @@ extern int transformerStatus;
 int adjustActive = 100;
 int adjustReactive = 25;
 int rampRate = 100;
+int adjustWind = 8;
+int adjustCutIn = 5;
+int adjustCutOff = 20;
 
 // Variables for Adjusting
 int *adjustingValue;
@@ -36,9 +39,11 @@ int adjustMin, adjustMax;
 Menu hostMenu, ccgtMenu, transformerMenu, cityMenu, transmissionMenu;
 Menu windMenu, windInfoMenu;
 Menu hostInfoMenu, ccgtInfoMenu, transformerInfoMenu, cityInfoMenu, transmissionInfoMenu;
-Menu ccgtSetpointMenu;
+Menu ccgtSetpointMenu, windSetpointMenu;
 //Add adjust menu
 Menu ccgtActive, ccgtReactive, ccgtRamp;
+Menu windSpeed, windCutIn, windCutOff;
+
 
 // Main Menu Items
 const char *hostItems[] = {"Module info", "Game mode"};
@@ -53,14 +58,15 @@ const char *transformerInfoItems[] = {"Transformer Data", "Back"};
 const char *cityInfoItems[] = {"City Data", "Back"};
 const char *transmissionInfoItems[] = {"Transmission Data", "Back"};
 const char *ccgtInfoItems[] = {"Generator Data", "Back"};
-const char *windInfoItems[] = {"Generator Data", "Back"};
+const char *windInfoItems[] = {"Back"};
 // Setpoint Items (TO DO)
 //const char *hostSetpoints[] = {"Mode 1", "Mode 2", "Back"};
 //const char *transformerSetpoints[] = {"Transformer Data", "Back"};
 //const char *citySetpoints[] = {"City Data", "Back"};
 //const char *transmissionSetpoints[] = {"Transmission Data", "Back"};
 const char *ccgtSetpoints[] = {"Active", "Reactive", "Ramp rate",  "Back"};
-// Setpoint Info Items
+const char *windSetpoints[] = {"Wind speed", "Cut In", "Cut Off",  "Back"};
+// Setpoint Info Items (not needed)
 const char *ccgtActiveItems[] = {"Active Data", "Back"};
 
 // Submenu pointers
@@ -69,15 +75,16 @@ Menu *transformerSubmenus[] = {&transformerInfoMenu, NULL};
 Menu *citySubmenus[] = {&cityInfoMenu, NULL};
 Menu *transmissionSubmenus[] = {&transmissionInfoMenu,NULL, NULL};
 Menu *ccgtSubmenus[] = {&ccgtInfoMenu, &ccgtSetpointMenu};
-Menu *windSubmenus[] = {&windInfoMenu, NULL};
+Menu *windSubmenus[] = {&windInfoMenu, &windSetpointMenu};
 
 //Setpoint submenus
 Menu *ccgtSetpointSubmenu[] = {&ccgtActive, &ccgtReactive, &ccgtRamp, NULL};
+Menu *windSetpointSubmenu[] = {&windSpeed, &windCutIn, &windCutOff, NULL};
 
 //Setup Menus
 void setupMenus(void) {
 	//default menu
-	currentMenu = &ccgtMenu;
+	currentMenu = &windMenu;
 
     // Initialize Host Menu
     hostMenu.title = "Host";
@@ -129,12 +136,48 @@ void setupMenus(void) {
 
     // Wind Generator Info Menu
     windInfoMenu.title = "Wind Info";
-    windInfoMenu.items = NULL;
-    windInfoMenu.itemCount = 0;
+    windInfoMenu.items = windInfoItems;
+    windInfoMenu.itemCount = 1;
     windInfoMenu.subMenus = NULL;
     windInfoMenu.parentMenu = &windMenu;
     windInfoMenu.showInfo = ShowGeneratorInfo;
     windInfoMenu.adjustFunc = NULL;
+
+    // Wind Setpoint Menu
+    windSetpointMenu.title = "Wind Setpoints";
+    windSetpointMenu.items = windSetpoints;
+    windSetpointMenu.itemCount = 4;
+    windSetpointMenu.subMenus = windSetpointSubmenu;
+    windSetpointMenu.parentMenu = &windMenu;
+    windSetpointMenu.showInfo = NULL;
+    windSetpointMenu.adjustFunc = NULL;
+
+    // Wind Speed
+    windSpeed.title = "Set Wind Speed";
+    windSpeed.items = NULL;
+    windSpeed.itemCount = 0;
+    windSpeed.subMenus = NULL;
+    windSpeed.parentMenu = &windSetpointMenu;
+    windSpeed.showInfo = NULL;
+    windSpeed.adjustFunc = AdjustWindSpeed;
+
+    // Wind Cut In
+    windCutIn.title = "Set CutIn Speed";
+    windCutIn.items = NULL;
+    windCutIn.itemCount = 0;
+    windCutIn.subMenus = NULL;
+    windCutIn.parentMenu = &windSetpointMenu;
+    windCutIn.showInfo = NULL;
+    windCutIn.adjustFunc = AdjustWindCutIn;
+
+    // Wind Cut Off
+    windCutOff.title = "Set CutOff Speed";
+    windCutOff.items = NULL;
+    windCutOff.itemCount = 0;
+    windCutOff.subMenus = NULL;
+    windCutOff.parentMenu = &windSetpointMenu;
+    windCutOff.showInfo = NULL;
+    windCutOff.adjustFunc = AdjustWindCutOff;
 
     //Host Grid Info Menu
     hostInfoMenu.title = "Grid Info";
@@ -183,7 +226,6 @@ void setupMenus(void) {
     ccgtSetpointMenu.itemCount = 4;
     ccgtSetpointMenu.subMenus = ccgtSetpointSubmenu;
     ccgtSetpointMenu.parentMenu = &ccgtMenu;
-    //ccgtInfoMenu.showInfo = NULL;
 
     // CCGT Active Power
     ccgtActive.title = "Active Power";
@@ -287,8 +329,20 @@ void AdjustReactivePower() {
     StartAdjustmentMode(&adjustReactive, "Adjust Reactive", 0, 50);
 }
 
-void AdjustRamp(){
+void AdjustRamp() {
 	StartAdjustmentMode(&rampRate, "Adjust Ramp rate", 0, 100);
+}
+
+void AdjustWindSpeed() {
+	StartAdjustmentMode(&adjustWind, "Wind Speed", 0, 40);
+}
+
+void AdjustWindCutIn() {
+	StartAdjustmentMode(&adjustCutIn, "Cut In Speed", 0, 10);
+}
+
+void AdjustWindCutOff() {
+	StartAdjustmentMode(&adjustCutOff, "Cut Off Speed", 0, 30);
 }
 
 // Trigger Adjustment Mode

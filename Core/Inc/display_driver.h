@@ -88,6 +88,9 @@ void StartAdjustmentMode(int *value, const char *label, int min, int max);
 void AdjustActivePower(void);
 void AdjustReactivePower(void);
 void AdjustRamp(void);
+void AdjustWindSpeed(void);
+void AdjustWindCutIn(void);
+void AdjustWindCutOff(void);
 
 
 #endif /* INC_DISPLAY_DRIVER_H_ */

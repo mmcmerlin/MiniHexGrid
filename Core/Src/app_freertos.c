@@ -340,19 +340,22 @@ void StartDisplayTask(void *argument)
 	osDelay(40);
     // If the menu has a ShowInfo function, refresh frequently
     if (currentMenu->showInfo != NULL) {
-        for (int i = 0; i < 10; i++) { // Check every 100ms x 10 = 1 second
-            if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET) {
-                navigateBack();
-                break;
-            }
-            osDelay(100);
-        }
+    	if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET) {
+    	    navigateBack();
+    	    osDelay(200); // debounce
+    	    continue;
+    	}
     	realPower = self.local.bus.real/10;
     	reactivePower = self.local.bus.reactive/10;
-    } else if (currentMenu->adjustFunc != NULL) {
-		// **Wake up the Adjustment Task**
-		osSemaphoreRelease(AdjustSemHandle);
-	} else {
+    }
+    static uint8_t adjustTriggered = 0;
+    if (currentMenu->adjustFunc != NULL && !adjustTriggered) {
+        osSemaphoreRelease(AdjustSemHandle);
+        adjustTriggered = 1;
+    } else if (currentMenu->adjustFunc == NULL) {
+        adjustTriggered = 0;  // Reset when not in adjust mode
+    }
+    else {
         osDelay(40); // Normal refresh rate
     }
   }
@@ -771,11 +774,11 @@ void StartValueTask(void *argument)
 
            if (adjustingValue != NULL)
            {
-               if (encoderPosition > lastEncoderPosition)
+               if (encoderPosition < lastEncoderPosition)
                {
                    *adjustingValue = (*adjustingValue < adjustMax) ? *adjustingValue + 1 : adjustMax;
                }
-               else if (encoderPosition < lastEncoderPosition)
+               else if (encoderPosition > lastEncoderPosition)
                {
                    *adjustingValue = (*adjustingValue > adjustMin) ? *adjustingValue - 1 : adjustMin;
                }

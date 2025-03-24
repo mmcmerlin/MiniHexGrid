@@ -23,7 +23,7 @@ extern int transformerStatus;
 
 // Default adjusting value
 int adjustActive = 100;
-int adjustReactive = 100;
+int adjustReactive = 25;
 int rampRate = 100;
 
 // Variables for Adjusting
@@ -60,6 +60,8 @@ const char *windInfoItems[] = {"Generator Data", "Back"};
 //const char *citySetpoints[] = {"City Data", "Back"};
 //const char *transmissionSetpoints[] = {"Transmission Data", "Back"};
 const char *ccgtSetpoints[] = {"Active", "Reactive", "Ramp rate",  "Back"};
+// Setpoint Info Items
+const char *ccgtActiveItems[] = {"Active Data", "Back"};
 
 // Submenu pointers
 Menu *hostSubmenus[] = {&hostInfoMenu, NULL};
@@ -75,7 +77,7 @@ Menu *ccgtSetpointSubmenu[] = {&ccgtActive, &ccgtReactive, &ccgtRamp, NULL};
 //Setup Menus
 void setupMenus(void) {
 	//default menu
-	currentMenu = &hostMenu;
+	currentMenu = &ccgtMenu;
 
     // Initialize Host Menu
     hostMenu.title = "Host";
@@ -185,8 +187,8 @@ void setupMenus(void) {
 
     // CCGT Active Power
     ccgtActive.title = "Active Power";
-    ccgtActive.items = NULL;
-    ccgtActive.itemCount = 0;
+    ccgtActive.items = ccgtActiveItems;
+    ccgtActive.itemCount = 2;
     ccgtActive.subMenus = NULL;
     ccgtActive.parentMenu = &ccgtSetpointMenu;
     ccgtActive.showInfo = NULL;
@@ -297,10 +299,27 @@ void StartAdjustmentMode(int *value, const char *label, int min, int max) {
     adjustMax = max;
 }
 
+void updateAdjustDisplay()
+{
+	if (adjustingValue == NULL || adjustLabel == NULL) return;
+
+	ssd1306_SetCursor(10, 17);
+	ssd1306_WriteString(adjustLabel, Font_7x10, White);
+	ssd1306_SetCursor(10, 27);
+
+	char buffer[10];
+	sprintf(buffer, "%d", *adjustingValue);
+	ssd1306_WriteString(buffer, Font_7x10, White);
+
+	ssd1306_SetCursor(10, 50);
+	ssd1306_WriteString("Exit: Press Button", Font_6x8, White);
+
+	ssd1306_UpdateScreen();
+}
+
 void updateMenuDisplay()
 {
 	ssd1306_Fill(Black);
-	//New
 	ssd1306_SetCursor(10, 0);
     // Display menu title
     ssd1306_WriteString(currentMenu->title, Font_7x10, White);
@@ -308,7 +327,10 @@ void updateMenuDisplay()
     // **Call module-specific display function**
     if (currentMenu->showInfo != NULL) {
         currentMenu->showInfo();  // Call assigned function
-    } else {
+	} else if (currentMenu->adjustFunc != NULL) {
+		currentMenu->adjustFunc(); 	// Call the adjustment function (which now wakes the task)
+		updateAdjustDisplay();
+	}else {
 	// Display menu items starting from the second line
 	for (uint8_t i = 0; i < WINDOW_SIZE; i++) {
 		uint8_t itemIndex = startIndex + i;
@@ -326,23 +348,6 @@ void updateMenuDisplay()
     }
 	ssd1306_UpdateScreen();
 }
-
-//void updateAdjustDisplay()
-//{
-// ssd1306_Fill(Black);
-// ssd1306_SetCursor(10, 10);
-// ssd1306_WriteString(adjustLabel, Font_11x18, White);
-// ssd1306_SetCursor(10, 25);
-//
-// char buffer[10];
-// sprintf(buffer, "%d", *adjustingValue);
-// ssd1306_WriteString(buffer, Font_11x18, White);
-//
-// ssd1306_SetCursor(10, 50);
-// ssd1306_WriteString("Exit: Press Button", Font_6x8, White);
-//
-// ssd1306_UpdateScreen();
-//}
 
 /*Navigation and selection functions*/
 void displaySelection() {
@@ -364,10 +369,22 @@ void navigateToSubmenu(Menu *submenu) {
 
 void navigateBack() {
     if (currentMenu->parentMenu) {
-        currentMenu = currentMenu->parentMenu; // Navigate back to the parent menu
-        currentIndex = 0;                      // Reset index for the parent menu
-        startIndex = 0;                        // Reset the display window
+        currentMenu = currentMenu->parentMenu;
+        // keep currentIndex
+        if (currentIndex >= currentMenu->itemCount) {
+            currentIndex = 0;  // clamp to safe range
+        }
+        if (startIndex > currentIndex) {
+            startIndex = currentIndex;
+        }
     }
+}
+
+void exitAdjustmentMode() {
+    navigateBack(); //Back to parent menu once
+    //Reset adjustment state
+    adjustingValue = NULL;
+    adjustLabel = NULL;
 }
 
 void handleSelection() {

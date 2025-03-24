@@ -54,7 +54,6 @@ extern Menu *currentMenu;
 extern uint8_t startIndex;
 //used externally by encoder for adjusting
 extern int *adjustingValue;
-extern const char *adjustLabel;
 extern int adjustMin, adjustMax;
 
 /* Adjusting Variables */
@@ -67,13 +66,14 @@ extern int rampRate;
 
 /* Declare functions */
 void updateMenuDisplay(void);
-//void updateAdjustDisplay(void);
+void updateAdjustDisplay(void);
 void setupMenus(void);
 void displaySelection(void);
 void navigateToSubmenu(Menu *submenu);
 void navigateBack(void);
 void handleSelection(void);
 void liveUpdate(void);
+void exitAdjustmentMode();
 
 // Function prototypes for display
 void ShowTransformerInfo(void);

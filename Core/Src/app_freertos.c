@@ -63,6 +63,9 @@ extern uint8_t currentIndex;
 extern Menu *currentMenu;
 extern uint8_t startIndex;
 
+extern int *adjustingValue;
+extern int adjustMin, adjustMax;
+
 // Encoder variables
 int16_t encoderPosition = 0;
 int16_t lastEncoderPosition = 0;
@@ -193,7 +196,7 @@ void MX_FREERTOS_Init(void) {
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
   /* creation of AdjustSem */
-  AdjustSemHandle = osSemaphoreNew(1, 1, &AdjustSem_attributes);
+  AdjustSemHandle = osSemaphoreNew(1, 0, &AdjustSem_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -236,7 +239,7 @@ void MX_FREERTOS_Init(void) {
   GameTaskHandle = osThreadNew(StartGameTask, NULL, &GameTask_attributes);
 
   /* creation of ValueTask */
-  // ValueTaskHandle = osThreadNew(StartValueTask, NULL, &ValueTask_attributes);
+  ValueTaskHandle = osThreadNew(StartValueTask, NULL, &ValueTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -277,26 +280,40 @@ void StartNeoPixelTask(void *argument)
 void StartEncoderTask(void *argument)
 {
   /* USER CODE BEGIN EncoderTask */
-  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
   /* Infinite loop */
   for(;;)
   {
-		encoderPosition = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
+	    // Skip if adjusting
+	    if (currentMenu == NULL || currentMenu->adjustFunc != NULL) {
+	        osDelay(10);
+	        continue;
+	    }
 
-		if (encoderPosition != lastEncoderPosition) {
-		  if (encoderPosition > lastEncoderPosition) {
-			currentIndex = (currentIndex + 1) % currentMenu->itemCount;
-			if (currentIndex >= startIndex + WINDOW_SIZE) {
-			  startIndex++;
-			}
-		  } else {
-			currentIndex = (currentIndex == 0) ? currentMenu->itemCount - 1 : currentIndex - 1;
-			if (currentIndex < startIndex) {
-			  startIndex--;
-			}
-		  }
-		  lastEncoderPosition = encoderPosition;
-		}
+	    // CRITICAL GUARD: skip if itemCount is invalid
+	    if (currentMenu->itemCount == 0 || currentMenu->items == NULL) {
+	        osDelay(10);
+	        continue;
+	    }
+
+	    int delta = getEncoderDelta();
+
+	    if (abs(delta) >= 2) {  // Threshold: ignore minor noise
+	        if (delta > 0) {
+	            currentIndex = (currentIndex + 1) % currentMenu->itemCount;
+	            if (currentIndex >= startIndex + WINDOW_SIZE) {
+	                startIndex++;
+	            }
+	        } else {
+	            currentIndex = (currentIndex == 0) ? currentMenu->itemCount - 1 : currentIndex - 1;
+	            if (currentIndex < startIndex && startIndex > 0) {
+	                startIndex--;
+	            }
+	        }
+
+	        // Reset encoder position to avoid drift
+	        lastEncoderPosition = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
+	    }
 	    osDelay(10);
   }
   /* USER CODE END EncoderTask */
@@ -332,7 +349,10 @@ void StartDisplayTask(void *argument)
         }
     	realPower = self.local.bus.real/10;
     	reactivePower = self.local.bus.reactive/10;
-    } else {
+    } else if (currentMenu->adjustFunc != NULL) {
+		// **Wake up the Adjustment Task**
+		osSemaphoreRelease(AdjustSemHandle);
+	} else {
         osDelay(40); // Normal refresh rate
     }
   }
@@ -571,21 +591,26 @@ void StartButtonTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
+	if (currentMenu->adjustFunc != NULL) {
+	  osDelay(50); // we're in adjustment mode — let ValueTask handle the button
+	  continue;
+	}
+
 	if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET && !buttonPressed)
 	{
-	buttonPressed = 1;
-	//test
-	  if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
-		handleSelection();
-		osDelay(50);
-		osMutexRelease(displayMutexHandle);
-	  } else if (currentMenu->adjustFunc != NULL) {
-		// Call the adjustment function (which now wakes the task)
-		currentMenu->adjustFunc();
-	    // **Wake up the Adjustment Task**
-	    osSemaphoreRelease(AdjustSemHandle);
-	  }
+	    buttonPressed = 1;
+	    if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
+	        Menu *previousMenu = currentMenu;  // Save current before selection
+	        handleSelection();                 // Might change currentMenu
+	        osMutexRelease(displayMutexHandle);
 
+	        // Check if we navigated into a new menu (submenu)
+	        if (currentMenu != previousMenu && currentMenu->adjustFunc == NULL) {
+	            lastEncoderPosition = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
+	        }
+
+	        osDelay(50);
+	    }
 	}
 	else if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_SET)
 	{
@@ -732,49 +757,74 @@ void StartGameTask(void *argument)
 void StartValueTask(void *argument)
 {
   /* USER CODE BEGIN ValueTask */
-	//AdjustSemHandle
   /* Infinite loop */
   for(;;)
   {
-//     // **Wait for a trigger (semaphore)**
-//     osSemaphoreAcquire(AdjustSemHandle, osWaitForever);
-//
-//     while (1) {
-//         // Update encoder position
-//         encoderPosition = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
-//
-//         if (encoderPosition > lastEncoderPosition) {
-//             *adjustingValue = (*adjustingValue < adjustMax) ? *adjustingValue + 1 : adjustMax;
-//         }
-//         else if (encoderPosition < lastEncoderPosition) {
-//             *adjustingValue = (*adjustingValue > adjustMin) ? *adjustingValue - 1 : adjustMin;
-//         }
-//         lastEncoderPosition = encoderPosition;
-//
-//         // Display Adjustment Screen
-//         if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK) {
+      osSemaphoreAcquire(AdjustSemHandle, osWaitForever);
 
-//             osMutexRelease(displayMutexHandle);
-//         }
-//
-//         // **Exit if button is pressed**
-//         if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET) {
-//             osDelay(200);  // Debounce delay
-//             break;
-//         }
-//
-//         osDelay(50);
-//     }
-//
-//	  // Reset adjustment mode
-//	  navigateBack();
-      osDelay(1);
+       // Capture initial encoder baseline
+       lastEncoderPosition = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
+
+       while (1)
+       {
+           encoderPosition = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
+
+           if (adjustingValue != NULL)
+           {
+               if (encoderPosition > lastEncoderPosition)
+               {
+                   *adjustingValue = (*adjustingValue < adjustMax) ? *adjustingValue + 1 : adjustMax;
+               }
+               else if (encoderPosition < lastEncoderPosition)
+               {
+                   *adjustingValue = (*adjustingValue > adjustMin) ? *adjustingValue - 1 : adjustMin;
+               }
+           }
+
+           lastEncoderPosition = encoderPosition;
+
+           // Use updateMenuDisplay, but only if still in adjustment mode
+           if (currentMenu && currentMenu->adjustFunc != NULL && adjustingValue != NULL)
+           {
+               if (osMutexAcquire(displayMutexHandle, osWaitForever) == osOK)
+               {
+                   updateMenuDisplay();  // Triggers adjustFunc + updateAdjustDisplay()
+                   osMutexRelease(displayMutexHandle);
+               }
+           }
+
+           // Button press to exit adjustment
+           if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET)
+           {
+               exitAdjustmentMode();
+
+               // Reset encoder state
+               encoderPosition = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
+               lastEncoderPosition = encoderPosition;
+               currentIndex = 0;
+               startIndex = 0;
+
+               osDelay(150);  // Debounce
+               break;
+           }
+
+           osDelay(40);
+       }
   }
   /* USER CODE END ValueTask */
 }
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+int getEncoderDelta() {
+    int16_t current = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
+    int16_t delta = current - lastEncoderPosition;
 
+    // Handle overflow wrap-around
+    if (delta > 32767) delta -= 65536;
+    if (delta < -32768) delta += 65536;
+
+    return delta;
+}
 /* USER CODE END Application */
 

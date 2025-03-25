@@ -7,6 +7,7 @@
 
 #include "display_driver.h"
 #include <string.h>
+#include "sim_driver.h"
 
 /* Scrolling Parameters */
 uint8_t startIndex = 0; // First item visible in the current window
@@ -20,14 +21,15 @@ extern int16_t realPower, reactivePower;
 extern int totalLoad;
 extern int hostFreq, hostPower;
 extern int transformerStatus;
+extern SIM_DATA self;
 
 // Default adjusting value
-int adjustActive = 100;
-int adjustReactive = 25;
-int rampRate = 100;
-int adjustWind = 8;
-int adjustCutIn = 5;
-int adjustCutOff = 20;
+int adjustActive;
+int adjustReactive;
+int rampRate;
+int adjustWind;
+int adjustCutIn;
+int adjustCutOff;
 
 // Variables for Adjusting
 int *adjustingValue;
@@ -347,6 +349,14 @@ void AdjustWindCutOff() {
 
 // Trigger Adjustment Mode
 void StartAdjustmentMode(int *value, const char *label, int min, int max) {
+	// Default adjusting value
+	adjustActive = (int) self.other.ccgt.setpoint/10;
+	adjustReactive = 25;
+	rampRate = (int) self.other.ccgt.delta;
+	adjustWind = (int) self.other.wind.speed/10;
+	adjustCutIn = (int) self.other.wind.cutin/10;
+	adjustCutOff = (int) self.other.wind.cutout/10;
+
     adjustingValue = value;
     adjustLabel = label;
     adjustMin = min;

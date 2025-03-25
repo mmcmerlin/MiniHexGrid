@@ -381,7 +381,8 @@ void StartServoTask(void *argument)
 	//insert get freq
 	//Servo_UpdateAngle();  //Angles SG90 according to frequency of grid
 	//Continuous servo
-	Servo_SetSpeed(-25); // Rotate FS90R at according to speed of the turbine
+	servo_speed = self.other.wind.speed/-10 ;
+	Servo_SetSpeed(servo_speed); // Rotate FS90R at according to speed of the turbine
 	osDelay(1000);
   }
   /* USER CODE END ServoTask */

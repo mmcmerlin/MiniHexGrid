@@ -5,9 +5,9 @@
  *      Author: Ikhwan Abd Rahman & Vikram Barr
  */
 
+#include <sim_comms.h>
 #include "display_driver.h"
 #include <string.h>
-#include "sim_driver.h"
 
 /* Scrolling Parameters */
 uint8_t startIndex = 0; // First item visible in the current window
@@ -21,7 +21,6 @@ extern int16_t realPower, reactivePower;
 extern int totalLoad;
 extern int hostFreq, hostPower;
 extern int transformerStatus;
-extern SIM_DATA self;
 
 // Default adjusting value
 int adjustActive;

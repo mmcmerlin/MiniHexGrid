@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <sim.h>
 #include <display_driver.h>
 #include <servo_routine.h>
 
@@ -64,6 +65,8 @@ extern uint8_t startIndex;
 
 extern int *adjustingValue;
 extern int adjustMin, adjustMax;
+
+MODULE module;
 
 // Encoder variables
 int16_t encoderPosition = 0;
@@ -183,13 +186,13 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
   /* creation of ReceiveQueue */
-  ReceiveQueueHandle = osMessageQueueNew (24, sizeof(RX_EVENT), &ReceiveQueue_attributes);
+  ReceiveQueueHandle = osMessageQueueNew (24, sizeof(MSG_EVENT), &ReceiveQueue_attributes);
   /* creation of TransmitQueue1 */
-  TransmitQueue1Handle = osMessageQueueNew (8, sizeof(TX_EVENT), &TransmitQueue1_attributes);
+  TransmitQueue1Handle = osMessageQueueNew (8, sizeof(MSG_EVENT), &TransmitQueue1_attributes);
   /* creation of TransmitQueue2 */
-  TransmitQueue2Handle = osMessageQueueNew (8, sizeof(TX_EVENT), &TransmitQueue2_attributes);
+  TransmitQueue2Handle = osMessageQueueNew (8, sizeof(MSG_EVENT), &TransmitQueue2_attributes);
   /* creation of TransmitQueue3 */
-  TransmitQueue3Handle = osMessageQueueNew (8, sizeof(TX_EVENT), &TransmitQueue3_attributes);
+  TransmitQueue3Handle = osMessageQueueNew (8, sizeof(MSG_EVENT), &TransmitQueue3_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -323,10 +326,11 @@ void StartDisplayTask(void *argument)
 void StartUARTTask(void *argument)
 {
   /* USER CODE BEGIN UARTTask */
+	SIM_Init(&module);
 
 	/* Infinite loop */
 	for (;;) {
-		osDelay(1);
+		SIM_Loop();
 	}
   /* USER CODE END UARTTask */
 }

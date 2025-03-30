@@ -5,7 +5,7 @@
  *      Author: Ikhwan Abd Rahman & Vikram Barr
  */
 
-#include <sim_comms.h>
+#include <sim_uart.h>
 #include "display_driver.h"
 #include <string.h>
 

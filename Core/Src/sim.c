@@ -7,14 +7,11 @@
 
 #include <sim.h>
 
-#define BASE_ACTIONS
-#include <sim_base.h>
+#include <sim_module.h>
+#include <sim_master.h>
 
 #define CUSTOM_ACTIONS
 #include <sim_custom.h>
-
-#define MASTER_ACTIONS
-#include <sim_master.h>
 
 MODULE modules[] = {
 	{
@@ -43,17 +40,12 @@ void SIM_Init(MODULE* module) {
 			break;
 		}
 	}
-
-	module->baseInit = &BASE_Init;
-	module->baseReceive[CLEAR] = &BASE_onClear;
-	module->baseReceive[UPDATE] = &BASE_onUpdate;
-	module->baseReceive[REQUEST] = &BASE_onRequest;
-	module->baseReceive[RESPONSE] = &BASE_onResponse;
-}
-
-
 }
 
 void SIM_Loop(MODULE* module) {
-
+	if (module->id.val == 0b00001111) {
+		MASTER_Main(module);
+	} else {
+		MODULE_Main(module);
+	}
 }

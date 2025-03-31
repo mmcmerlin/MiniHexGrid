@@ -21,46 +21,15 @@ enum {
 	NUM_TYPES,
 } MSG_TYPES;
 
-typedef struct {
-	uint8_t mode;
-	uint8_t hour;
-	uint8_t minute;
-	int8_t frequency;
-} UPDATE_DATA;
-
-typedef union {
-	struct {
-		int16_t real;
-		int16_t reactive;
-	} bus;
-
-	struct {
-		uint8_t length;
-		uint8_t quality;
-		int8_t tap;
-	} line;
-} REQUEST_DATA;
-
-typedef union {
-	struct {
-		int8_t voltage;
-		int16_t reactive;
-	} bus;
-
-	struct {
-		int16_t mva;
-	} line;
-} RESPONSE_DATA;
-
 #define SPECIAL 		0b00
 #define GENERATION	0b01
 #define LOAD 				0b10
 #define LINE	 			0b11
 
-#define ANY				0b00
-#define LOW				0b01
-#define MEDIUM		0b10
-#define HIGH			0b11
+#define ANY					0b00
+#define LOW					0b01
+#define MEDIUM			0b10
+#define HIGH				0b11
 
 typedef union {
 	uint8_t val;
@@ -90,18 +59,15 @@ typedef struct {
 	MODULE_ID id;
 	char display[15];
 
-	void* base;
-	size_t base_size;
-
 	void* custom;
 	size_t custom_size;
 
-	void (*baseInit)(void*);
-	void (*baseReceive[MAX_MSG_TYPES])(void*, MSG_EVENT);
+	void* common;
+	size_t common_size;
 
 	void (*customInit)(void*);
-	void (*customReceive[MAX_MSG_TYPES])(void*, MSG_EVENT);
-	void (*customData[MAX_MSG_TYPES])(void*, MSG_EVENT*);
+	void (*customReceive[NUM_TYPES])(void*, MSG_EVENT);
+	void (*customData[NUM_TYPES])(void*, MSG_EVENT*);
 } MODULE;
 
 typedef struct {
@@ -110,6 +76,38 @@ typedef struct {
 	MODULE_ID last;
 	MODULE_ADDR address;
 } META_DATA;
+
+typedef struct {
+	uint8_t mode;
+	uint8_t day : 3;
+	uint8_t hour : 5;
+	uint8_t minute;
+	int8_t frequency;
+} UPDATE_DATA;
+
+typedef union {
+	struct {
+		int16_t real;
+		int16_t reactive;
+	} bus;
+
+	struct {
+		uint8_t length;
+		uint8_t quality;
+		int8_t tap;
+	} line;
+} REQUEST_DATA;
+
+typedef union {
+	struct {
+		int8_t voltage;
+		int16_t reactive;
+	} bus;
+
+	struct {
+		int16_t mva;
+	} line;
+} RESPONSE_DATA;
 
 typedef struct {
 	META_DATA meta;
